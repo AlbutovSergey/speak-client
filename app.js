@@ -3,7 +3,7 @@ let currentUser = null;
 let privateKey = null;
 let currentChat = null;
 
-const API_URL = 'https://speak-backend-b43k.onrender.com'; // ⚠️ ЗАМЕНИТЕ! Например: 'https://speak-backend.onrender.com'
+const API_URL = 'https://speak-backend.onrender.com'; // ⚠️ ЗАМЕНИТЕ! Например: 'https://speak-backend.onrender.com'
 
 async function initSodium() {
     await window.sodium.ready;
