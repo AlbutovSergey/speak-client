@@ -4,32 +4,420 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Speak — безопасный мессенджер</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon.png">
     <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; }
         .container { max-width: 600px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
-        .header { padding: 20px; background: #1a1a1a; text-align: center; font-weight: bold; border-bottom: 1px solid #333; }
-        .chat-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .header { padding: 16px 20px; background: #1a1a1a; text-align: center; font-weight: bold; border-bottom: 1px solid #333; flex-shrink: 0; }
+        .contacts-area { padding: 12px 16px; border-bottom: 1px solid #333; display: flex; gap: 8px; overflow-x: auto; white-space: nowrap; background: #0f0f0f; flex-shrink: 0; }
+        .contact-chip { background: #2c2c2e; padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 14px; }
+        .contact-chip.active { background: #007aff; }
+        .chat-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
         .message { max-width: 80%; padding: 10px 14px; border-radius: 18px; word-wrap: break-word; }
         .message.own { align-self: flex-end; background: #007aff; color: white; }
         .message.other { align-self: flex-start; background: #2c2c2e; }
-        .input-area { display: flex; padding: 12px; gap: 8px; background: #1a1a1a; border-top: 1px solid #333; }
-        .input-area input { flex: 1; padding: 12px; border-radius: 24px; border: none; background: #2c2c2e; color: white; font-size: 16px; }
+        .message strong { font-weight: 600; }
+        .input-area { display: flex; padding: 12px; gap: 8px; background: #1a1a1a; border-top: 1px solid #333; flex-shrink: 0; }
+        .input-area input { flex: 1; padding: 12px; border-radius: 24px; border: none; background: #2c2c2e; color: white; font-size: 16px; outline: none; }
         .input-area button { background: #007aff; border: none; padding: 12px 20px; border-radius: 24px; color: white; font-weight: bold; cursor: pointer; }
-        .login-area { padding: 40px 20px; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; height: 100vh; }
-        .login-area input, .login-area button { padding: 12px; width: 100%; max-width: 300px; border-radius: 12px; border: none; font-size: 16px; }
+        .login-area { padding: 40px 20px; display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .login-area input, .login-area button { padding: 12px; width: 100%; max-width: 300px; border-radius: 12px; border: none; font-size: 16px; margin: 8px 0; }
         .login-area button { background: #007aff; color: white; font-weight: bold; cursor: pointer; }
-        .contacts-area { padding: 20px; border-bottom: 1px solid #333; display: flex; gap: 10px; overflow-x: auto; }
-        .contact-chip { background: #2c2c2e; padding: 8px 16px; border-radius: 20px; cursor: pointer; white-space: nowrap; }
-        .contact-chip.active { background: #007aff; }
+        .login-area .switch-buttons { display: flex; gap: 10px; max-width: 300px; width: 100%; }
+        .login-area .switch-buttons button { margin: 0; background: #2c2c2e; }
+        .login-area .switch-buttons .active { background: #007aff; }
+        .header button { float: right; background: #ff3b30; border: none; padding: 4px 12px; border-radius: 12px; color: white; cursor: pointer; font-size: 14px; margin-left: 8px; }
+        .header .change-name-btn { background: #2c2c2e; float: right; margin-right: 8px; }
     </style>
 </head>
 <body>
-    <div id="app"></div>
+    <div id="app">Загрузка Speak...</div>
+
+    <!-- Подключаем библиотеку sodium (локальный файл) -->
     <script src="sodium.js"></script>
-    <script src="app.js"></script>
+
+    <script>
+        // ============ НАСТРОЙКИ ============
+        const API_URL = 'https://speak-backend.onrender.com'; // ВАШ АДРЕС СЕРВЕРА!
+
+        // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
+        let sodium = null;
+        let currentUsername = null;
+        let currentUserDisplayName = null;
+        let currentUserId = null;
+        let privateKey = null;
+        let signaturePrivateKey = null;
+        let currentChat = null;
+        let authToken = null;
+
+        // ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============
+        async function initSodium() {
+            await window.sodium.ready;
+            sodium = window.sodium;
+            console.log('[Speak] Sodium инициализирован');
+        }
+
+        async function generateKeys() {
+            const keypair = sodium.crypto_box_keypair();
+            const publicKey = sodium.to_base64(keypair.publicKey);
+            const privateKeyBase64 = sodium.to_base64(keypair.privateKey);
+            const signKeypair = sodium.crypto_sign_keypair();
+            const signPublicKey = sodium.to_base64(signKeypair.publicKey);
+            const signPrivateKey = sodium.to_base64(signKeypair.privateKey);
+            return { publicKey, privateKey: privateKeyBase64, signPublicKey, signPrivateKey };
+        }
+
+        async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
+            const recipientPub = sodium.from_base64(recipientPublicKey);
+            const senderPriv = sodium.from_base64(senderPrivateKey);
+            const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+            const encrypted = sodium.crypto_box_easy(
+                sodium.from_string(message),
+                nonce,
+                recipientPub,
+                senderPriv
+            );
+            return { payload: sodium.to_base64(encrypted), nonce: sodium.to_base64(nonce) };
+        }
+
+        async function decryptMessage(encryptedPayload, nonce, senderPublicKey, recipientPrivateKey) {
+            const senderPub = sodium.from_base64(senderPublicKey);
+            const recipientPriv = sodium.from_base64(recipientPrivateKey);
+            const decrypted = sodium.crypto_box_open_easy(
+                sodium.from_base64(encryptedPayload),
+                sodium.from_base64(nonce),
+                senderPub,
+                recipientPriv
+            );
+            return sodium.to_string(decrypted);
+        }
+
+        // ============ API ЗАПРОСЫ ============
+        async function apiRequest(endpoint, method, body = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const response = await fetch(`${API_URL}${endpoint}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : undefined
+            });
+            if (response.status === 401) {
+                await logout();
+                throw new Error('Session expired');
+            }
+            return response;
+        }
+
+        // ============ АВТОРИЗАЦИЯ ============
+        async function register(username, password, displayName) {
+            try {
+                const keys = await generateKeys();
+                const response = await apiRequest('/api/register', 'POST', {
+                    username, password,
+                    displayName: displayName || username,
+                    publicKey: keys.publicKey,
+                    signaturePublicKey: keys.signPublicKey,
+                    signaturePrivateKey: keys.signPrivateKey
+                });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    currentUserId = data.userId;
+                    currentUsername = data.username;
+                    currentUserDisplayName = data.displayName || data.username;
+                    privateKey = keys.privateKey;
+                    localStorage.setItem('speak_token', authToken);
+                    localStorage.setItem('speak_username', currentUsername);
+                    localStorage.setItem('speak_displayName', currentUserDisplayName);
+                    localStorage.setItem('speak_userId', currentUserId);
+                    localStorage.setItem('speak_privateKey', privateKey);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('Ошибка регистрации: ' + error.message);
+                return false;
+            }
+        }
+
+        async function login(username, password) {
+            try {
+                const response = await apiRequest('/api/login', 'POST', { username, password });
+                const data = await response.json();
+                if (data.success) {
+                    authToken = data.token;
+                    currentUserId = data.userId;
+                    currentUsername = data.username;
+                    currentUserDisplayName = data.display_name || data.username;
+                    privateKey = data.signaturePrivateKey;
+                    localStorage.setItem('speak_token', authToken);
+                    localStorage.setItem('speak_username', currentUsername);
+                    localStorage.setItem('speak_displayName', currentUserDisplayName);
+                    localStorage.setItem('speak_userId', currentUserId);
+                    localStorage.setItem('speak_privateKey', privateKey);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Ошибка входа: ' + error.message);
+                return false;
+            }
+        }
+
+        async function logout() {
+            if (authToken) await apiRequest('/api/logout', 'POST').catch(() => {});
+            localStorage.clear();
+            authToken = null;
+            currentUsername = null;
+            currentChat = null;
+            showLoginUI();
+        }
+
+        async function changeMyDisplayName(newDisplayName) {
+            if (!newDisplayName || newDisplayName.length < 1 || newDisplayName.length > 50) {
+                alert('Имя должно быть от 1 до 50 символов');
+                return false;
+            }
+            try {
+                const response = await apiRequest('/api/change_display_name', 'POST', { newDisplayName });
+                const data = await response.json();
+                if (data.success) {
+                    currentUserDisplayName = newDisplayName;
+                    localStorage.setItem('speak_displayName', newDisplayName);
+                    updateHeader();
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('Change name error:', error);
+                alert('Ошибка при смене имени');
+                return false;
+            }
+        }
+
+        // ============ СООБЩЕНИЯ ============
+        async function sendMessage(recipientUsername, messageText) {
+            try {
+                const recipientKeyRes = await apiRequest(`/api/public_key/${recipientUsername}`, 'GET');
+                const recipientData = await recipientKeyRes.json();
+                const encrypted = await encryptMessage(messageText, recipientData.public_key, privateKey);
+                await apiRequest('/api/send_message', 'POST', {
+                    recipientUsername,
+                    encryptedPayload: encrypted.payload,
+                    nonce: encrypted.nonce
+                });
+                return true;
+            } catch (error) {
+                console.error('Send error:', error);
+                alert('Ошибка отправки: ' + error.message);
+                return false;
+            }
+        }
+
+        async function loadMessages() {
+            try {
+                const response = await apiRequest('/api/messages', 'GET');
+                const messages = await response.json();
+                const decryptedMessages = [];
+                for (const msg of messages) {
+                    try {
+                        const senderPubRes = await apiRequest(`/api/public_key/${msg.sender_username}`, 'GET');
+                        const senderData = await senderPubRes.json();
+                        const decryptedText = await decryptMessage(
+                            msg.encrypted_payload, msg.nonce,
+                            senderData.public_key, privateKey
+                        );
+                        decryptedMessages.push({
+                            text: decryptedText,
+                            isOwn: msg.sender_username === currentUsername,
+                            senderUsername: msg.sender_username,
+                            senderDisplayName: msg.sender_display_name || msg.sender_username
+                        });
+                    } catch(e) {
+                        decryptedMessages.push({
+                            text: "[🔒 Зашифровано]",
+                            isOwn: false,
+                            senderUsername: msg.sender_username,
+                            senderDisplayName: msg.sender_display_name || msg.sender_username
+                        });
+                    }
+                }
+                return decryptedMessages;
+            } catch (error) {
+                console.error('Load messages error:', error);
+                return [];
+            }
+        }
+
+        // ============ UI ОБНОВЛЕНИЯ ============
+        async function loadChatList() {
+            const messages = await loadMessages();
+            const chats = [...new Set(messages.map(m => m.isOwn ? currentChat : m.senderUsername).filter(Boolean))];
+            const contactsDiv = document.getElementById('contactsArea');
+            if (contactsDiv) {
+                if (chats.length === 0) {
+                    contactsDiv.innerHTML = '<div style="color:#888; padding:8px; width:100%; text-align:center;">➕ Напишите кому-нибудь, указав его имя</div>';
+                } else {
+                    contactsDiv.innerHTML = chats.map(contact => `<div class="contact-chip ${currentChat === contact ? 'active' : ''}" data-id="${contact}">${contact}</div>`).join('');
+                    document.querySelectorAll('.contact-chip').forEach(el => {
+                        el.onclick = () => { currentChat = el.dataset.id; loadMessagesForChat(currentChat); loadChatList(); };
+                    });
+                }
+            }
+        }
+
+        async function loadMessagesForChat(chatUsername) {
+            const messages = await loadMessages();
+            const relevant = messages.filter(m => m.senderUsername === chatUsername || (m.isOwn && currentChat === chatUsername));
+            const chatArea = document.getElementById('chatArea');
+            const chatHeader = document.getElementById('chatHeader');
+            if (chatHeader) chatHeader.innerHTML = `💬 Чат с ${chatUsername}`;
+            if (chatArea) {
+                if (relevant.length === 0) {
+                    chatArea.innerHTML = '<div style="text-align:center; color:#888; margin-top:40px;">💬 Напишите первое сообщение</div>';
+                } else {
+                    chatArea.innerHTML = relevant.map(m => `
+                        <div class="message ${m.isOwn ? 'own' : 'other'}">
+                            <strong>${m.isOwn ? 'Вы' : (m.senderDisplayName || m.senderUsername)}:</strong> ${m.text}
+                            <div style="font-size: 10px; color:#666; margin-top: 4px;">${m.isOwn ? '' : '@' + m.senderUsername}</div>
+                        </div>
+                    `).join('');
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            }
+        }
+
+        function updateHeader() {
+            const headerDiv = document.querySelector('.header > div');
+            if (headerDiv) {
+                const nameSpan = headerDiv.querySelector('span');
+                if (nameSpan) nameSpan.innerHTML = `💬 Speak — ${currentUserDisplayName || currentUsername}`;
+            }
+        }
+
+        // ============ ОТРИСОВКА ГЛАВНОГО ИНТЕРФЕЙСА ============
+        function showMainUI() {
+            const displayName = currentUserDisplayName || currentUsername;
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>💬 Speak — ${displayName}</span>
+                            <div>
+                                <button class="change-name-btn" id="changeNameBtn">✏️ Имя</button>
+                                <button id="logoutBtn">🚪 Выйти</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="chatHeader" style="padding: 8px 16px; background: #1a1a1a; border-bottom: 1px solid #333; font-size: 14px; color: #888;"></div>
+                    <div class="contacts-area" id="contactsArea">Загрузка...</div>
+                    <div class="chat-area" id="chatArea">👈 Выберите контакт</div>
+                    <div class="input-area">
+                        <input type="text" id="messageInput" placeholder="Сообщение...">
+                        <button id="sendBtn">→</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('changeNameBtn').onclick = () => {
+                const newName = prompt('Введите новое отображаемое имя:', currentUserDisplayName);
+                if (newName && newName.trim()) changeMyDisplayName(newName.trim());
+            };
+            document.getElementById('logoutBtn').onclick = async () => { await logout(); location.reload(); };
+            document.getElementById('sendBtn').onclick = async () => {
+                if (!currentChat) return alert('Выберите контакт');
+                const input = document.getElementById('messageInput');
+                const text = input.value.trim();
+                if (!text) return;
+                await sendMessage(currentChat, text);
+                input.value = '';
+                await loadMessagesForChat(currentChat);
+            };
+            loadChatList();
+        }
+
+        // ============ ОТРИСОВКА ЭКРАНА ВХОДА ============
+        function showLoginUI() {
+            document.getElementById('app').innerHTML = `
+                <div class="login-area">
+                    <h2>🔒 Speak</h2>
+                    <p style="color:#888;">Безопасный мессенджер</p>
+                    <div class="switch-buttons">
+                        <button id="showLoginBtn" class="active">Вход</button>
+                        <button id="showRegisterBtn">Регистрация</button>
+                    </div>
+                    <div id="loginForm">
+                        <input type="text" id="loginUsername" placeholder="Логин">
+                        <input type="password" id="loginPassword" placeholder="Пароль">
+                        <button id="loginBtn">Войти</button>
+                    </div>
+                    <div id="registerForm" style="display:none;">
+                        <input type="text" id="regDisplayName" placeholder="Отображаемое имя">
+                        <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)">
+                        <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
+                        <button id="registerBtn">Зарегистрироваться</button>
+                    </div>
+                    <p style="font-size: 12px; color:#888;">Сквозное шифрование | Никто не прочитает</p>
+                </div>
+            `;
+            document.getElementById('showLoginBtn').onclick = () => {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('showLoginBtn').classList.add('active');
+                document.getElementById('showRegisterBtn').classList.remove('active');
+            };
+            document.getElementById('showRegisterBtn').onclick = () => {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('showRegisterBtn').classList.add('active');
+                document.getElementById('showLoginBtn').classList.remove('active');
+            };
+            document.getElementById('loginBtn').onclick = async () => {
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value;
+                if (username && password && await login(username, password)) location.reload();
+                else alert('Неверный логин или пароль');
+            };
+            document.getElementById('registerBtn').onclick = async () => {
+                const displayName = document.getElementById('regDisplayName').value.trim();
+                const username = document.getElementById('regUsername').value.trim();
+                const password = document.getElementById('regPassword').value;
+                if (username.length < 3) alert('Логин должен быть не менее 3 символов');
+                else if (password.length < 6) alert('Пароль должен быть не менее 6 символов');
+                else if (await register(username, password, displayName)) location.reload();
+                else alert('Ошибка регистрации. Возможно, логин занят.');
+            };
+        }
+
+        // ============ ЗАПУСК ПРИЛОЖЕНИЯ ============
+        async function startApp() {
+            if (!window.sodium) { setTimeout(startApp, 100); return; }
+            await initSodium();
+            const token = localStorage.getItem('speak_token');
+            const username = localStorage.getItem('speak_username');
+            const displayName = localStorage.getItem('speak_displayName');
+            const uid = localStorage.getItem('speak_userId');
+            const key = localStorage.getItem('speak_privateKey');
+            if (token && username) {
+                authToken = token;
+                currentUsername = username;
+                currentUserDisplayName = displayName || username;
+                currentUserId = uid;
+                privateKey = key;
+                try {
+                    const res = await apiRequest('/api/verify', 'GET');
+                    const data = await res.json();
+                    if (data.valid) showMainUI();
+                    else { await logout(); showLoginUI(); }
+                } catch(e) { await logout(); showLoginUI(); }
+            } else { showLoginUI(); }
+        }
+
+        startApp();
+        setInterval(async () => { if (currentUsername && currentChat) await loadMessagesForChat(currentChat); }, 3000);
+    </script>
 </body>
 </html>
