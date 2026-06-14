@@ -805,7 +805,7 @@
                 console.error('Load messages error:', err);
             }
         }
-        // ============ ОТРИСОВКА СТРАНИЦЫ КОНТАКТОВ ============
+               // ============ ОТРИСОВКА СТРАНИЦЫ КОНТАКТОВ ============
         async function renderContactsPage() {
             const contactsContainer = document.getElementById('contactsList');
             if (!contactsContainer) return;
@@ -830,13 +830,11 @@
                     <div class="contact-avatar">👤</div>
                     <div class="contact-card-info">
                         <div class="contact-card-name">${formatNickname(contact.nickname)}</div>
-                        <div class="contact-card-username">${contact.username}</div>
                     </div>
                     <div class="delete-contact" onclick="event.stopPropagation(); removeContact('${contact.username}')">🗑️</div>
                 </div>
             `).join('');
         }
-        
         // ============ ВЫБОР ЧАТА ============
         async function selectChat(username) {
             currentChat = username;
