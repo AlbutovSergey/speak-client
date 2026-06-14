@@ -7,9 +7,19 @@
     <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; }
         
-        /* Сайдбар со списком контактов */
+        body { 
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; 
+            background: #0a0a0a; 
+            color: white; 
+        }
+        
+        /* Стили для чата */
+        .chat-layout {
+            display: flex;
+            height: 100vh;
+        }
+        
         .sidebar {
             width: 280px;
             background: #111111;
@@ -290,7 +300,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             background: #0a0a0a;
         }
         
@@ -355,12 +365,6 @@
         .switch-buttons .active {
             background: #007aff;
         }
-        
-        .login-hint {
-            font-size: 11px;
-            color: #666;
-            margin-top: 15px;
-        }
     </style>
 </head>
 <body>
@@ -377,10 +381,18 @@
         let currentUserId = localStorage.getItem('speak_userId');
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
+        let searchTimeout = null;
         
+        // Функция для форматирования отображаемого имени (добавляет @ если нет)
         function formatDisplayName(name) {
             if (!name) return '';
             return name.startsWith('@') ? name : `@${name}`;
+        }
+        
+        // Функция для очистки отображаемого имени (убирает @ для проверки)
+        function cleanDisplayName(name) {
+            if (!name) return '';
+            return name.replace(/^@/, '');
         }
         
         async function apiRequest(endpoint, method, body = null) {
@@ -405,13 +417,24 @@
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             
+            // Добавляем @ к отображаемому имени если его нет
             if (displayName && !displayName.startsWith('@')) {
                 displayName = '@' + displayName;
             }
             
-            if (!displayName) { alert('Введите отображаемое имя'); return; }
-            if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
-            if (password.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; }
+            // Проверки с русскими сообщениями
+            if (!displayName) {
+                alert('Введите отображаемое имя');
+                return;
+            }
+            if (username.length < 3) {
+                alert('Логин должен содержать не менее 3 символов');
+                return;
+            }
+            if (password.length < 6) {
+                alert('Пароль должен содержать не менее 6 символов');
+                return;
+            }
             
             try {
                 const response = await apiRequest('/api/register', 'POST', {
@@ -433,6 +456,7 @@
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
+                    // Русские сообщения об ошибках от сервера
                     if (data.error === 'Username already exists') {
                         alert('Пользователь с таким логином уже существует');
                     } else if (data.error === 'This display name is already taken') {
@@ -442,7 +466,8 @@
                     }
                 }
             } catch (err) {
-                alert('Ошибка соединения с сервером');
+                console.error('Register error:', err);
+                alert('Ошибка соединения с сервером. Попробуйте позже.');
             }
         }
         
@@ -471,10 +496,16 @@
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
-                    alert('Неверный логин или пароль');
+                    // Русские сообщения об ошибках входа
+                    if (data.error === 'Invalid username or password' || data.error === 'Invalid credentials') {
+                        alert('Неверный логин или пароль');
+                    } else {
+                        alert('Ошибка входа: ' + (data.error || 'Неизвестная ошибка'));
+                    }
                 }
             } catch (err) {
-                alert('Ошибка соединения с сервером');
+                console.error('Login error:', err);
+                alert('Ошибка соединения с сервером. Попробуйте позже.');
             }
         }
         
@@ -484,15 +515,72 @@
             location.reload();
         }
         
+        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ============
+        async function searchUsers(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
+                return [];
+            }
+            
+            const cleanQuery = query.replace(/^@/, '');
+            
+            try {
+                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(cleanQuery), 'GET');
+                const users = await response.json();
+                return users.filter(u => u.username !== currentUser);
+            } catch (err) {
+                console.log('Search API not available');
+                return [];
+            }
+        }
+        
+        function showSearchResults(results) {
+            const resultsDiv = document.getElementById('searchResults');
+            if (!resultsDiv) return;
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding:10px; color:#888;">Пользователи не найдены</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.map(user => `
+                <div class="search-result-item" onclick="addContactByUsername('${user.username}')">
+                    <div><strong>${formatDisplayName(user.display_name || user.username)}</strong></div>
+                    <div style="font-size:12px; color:#888;">${user.username}</div>
+                </div>
+            `).join('');
+            resultsDiv.style.display = 'block';
+        }
+        
         // ============ ДОБАВИТЬ КОНТАКТ ============
+        async function addContactByUsername(username) {
+            if (!username || username === currentUser) return;
+            
+            if (!contacts.includes(username)) {
+                contacts.push(username);
+                localStorage.setItem('speak_contacts', JSON.stringify(contacts));
+                renderContacts();
+                showStatus('Контакт добавлен');
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
+            } else {
+                showStatus('Этот контакт уже есть', true);
+            }
+        }
+        
         async function addContact() {
-            const username = prompt('Введите логин собеседника:');
+            const input = prompt('Введите логин собеседника:');
+            if (!input) return;
+            const username = input.trim();
             if (!username || username === currentUser) return;
             
             try {
-                const response = await apiRequest(`/api/user_info/${username}`, 'GET');
+                const response = await apiRequest(`/api/public_key/${username}`, 'GET');
                 if (response.status === 404) {
-                    alert('Пользователь не найден');
+                    showStatus('Пользователь не найден', true);
                     return;
                 }
                 
@@ -502,15 +590,15 @@
                     renderContacts();
                     showStatus('Контакт добавлен');
                 } else {
-                    showStatus('Контакт уже есть', true);
+                    showStatus('Этот контакт уже есть', true);
                 }
             } catch (err) {
-                showStatus('Ошибка', true);
+                showStatus('Ошибка проверки пользователя', true);
             }
         }
         
         function removeContact(username) {
-            if (confirm(`Удалить контакт?`)) {
+            if (confirm('Удалить контакт?')) {
                 contacts = contacts.filter(c => c !== username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 if (currentChat === username) {
@@ -548,7 +636,7 @@
                 input.value = '';
                 loadMessages();
             } catch (err) {
-                showStatus('Ошибка отправки', true);
+                showStatus('Ошибка отправки сообщения', true);
             }
         }
         
@@ -567,7 +655,7 @@
                 
                 const messagesDiv = document.getElementById('messagesArea');
                 if (chatMessages.length === 0) {
-                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений</div>';
+                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
                 } else {
                     messagesDiv.innerHTML = chatMessages.map(msg => `
                         <div class="message ${msg.sender_username === currentUser ? 'own' : 'other'}">
@@ -633,6 +721,24 @@
             loadMessages();
         }
         
+        // ============ ОБРАБОТКА ПОИСКА ============
+        function onSearchInput() {
+            const input = document.getElementById('searchInput');
+            const query = input.value.trim();
+            
+            if (searchTimeout) clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchUsers(query).then(showSearchResults);
+            }, 500);
+        }
+        
         // ============ ЭКРАН ВХОДА ============
         function renderLogin() {
             document.getElementById('app').innerHTML = `
@@ -665,4 +771,90 @@
             `;
             
             document.getElementById('showLoginBtn').onclick = () => {
-                document.getElementById
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('registerForm').style.display = 'none';
+                document.getElementById('showLoginBtn').classList.add('active');
+                document.getElementById('showRegisterBtn').classList.remove('active');
+            };
+            
+            document.getElementById('showRegisterBtn').onclick = () => {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('registerForm').style.display = 'block';
+                document.getElementById('showRegisterBtn').classList.add('active');
+                document.getElementById('showLoginBtn').classList.remove('active');
+            };
+            
+            document.getElementById('doLoginBtn').onclick = login;
+            document.getElementById('doRegisterBtn').onclick = register;
+        }
+        
+        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА ============
+        function renderChat() {
+            document.getElementById('app').innerHTML = `
+                <div class="chat-layout">
+                    <div class="sidebar">
+                        <div class="sidebar-header">
+                            <h2>💬 Speak</h2>
+                            <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
+                        </div>
+                        
+                        <div class="search-area">
+                            <input type="text" id="searchInput" placeholder="🔍 Поиск по отображаемому имени..." oninput="onSearchInput()">
+                            <div id="searchResults" class="search-results" style="display:none;"></div>
+                        </div>
+                        
+                        <div class="contacts-list" id="contactsList"></div>
+                        
+                        <div class="add-contact">
+                            <button onclick="addContact()">➕ Добавить контакт</button>
+                            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-main" style="display: none;">
+                        <div class="chat-header">
+                            <h3 id="chatHeaderName">Выберите чат</h3>
+                            <p id="chatHeaderStatus">Выберите собеседника из списка</p>
+                        </div>
+                        
+                        <div class="messages-area" id="messagesArea">
+                            <div class="empty-state">👈 Выберите чат слева</div>
+                        </div>
+                        
+                        <div class="input-area">
+                            <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
+                            <button onclick="sendMessage()">→</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            renderContacts();
+            
+            setInterval(() => {
+                if (currentChat) loadMessages();
+            }, 3000);
+        }
+        
+        // ============ ЗАПУСК ============
+        if (authToken && currentUser) {
+            renderChat();
+        } else {
+            renderLogin();
+        }
+        
+        // Делаем функции глобальными
+        window.register = register;
+        window.login = login;
+        window.logout = logout;
+        window.addContact = addContact;
+        window.addContactByUsername = addContactByUsername;
+        window.removeContact = removeContact;
+        window.sendMessage = sendMessage;
+        window.selectChat = selectChat;
+        window.onSearchInput = onSearchInput;
+        window.searchUsers = searchUsers;
+        window.showSearchResults = showSearchResults;
+    </script>
+</body>
+</html>
