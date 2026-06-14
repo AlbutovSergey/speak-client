@@ -735,40 +735,47 @@
         }
         
         // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
-        async function loadMessages() {
-            if (!authToken || !currentChat) return;
-            
-            try {
-                const response = await apiRequest('/api/messages', 'GET');
-                const allMessages = await response.json();
-                
-                const chatMessages = allMessages.filter(msg => 
-                    msg.sender_username === currentChat || 
-                    msg.sender_username === currentUser
-                );
-                
-                const messagesDiv = document.getElementById('messagesArea');
-                if (chatMessages.length === 0) {
-                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
-                } else {
-                    messagesDiv.innerHTML = chatMessages.map(msg => {
-                        const isOwn = msg.sender_username === currentUser;
-                        const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
-                        return `
-                            <div class="message ${isOwn ? 'own' : 'other'}">
-                                <div class="message-sender">${senderName}</div>
-                                <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
-                                <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
-                            </div>
-                        `;
-                    }).join('');
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                }
-            } catch (err) {
-                console.error('Load messages error:', err);
-            }
-        }
+async function loadMessages() {
+    if (!authToken || !currentChat) return;
+    
+    try {
+        const response = await apiRequest('/api/messages', 'GET');
+        const allMessages = await response.json();
         
+        const chatMessages = allMessages.filter(msg => 
+            msg.sender_username === currentChat || 
+            msg.sender_username === currentUser
+        );
+        
+        const messagesDiv = document.getElementById('messagesArea');
+        if (chatMessages.length === 0) {
+            messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
+        } else {
+            messagesDiv.innerHTML = chatMessages.map(msg => {
+                const isOwn = msg.sender_username === currentUser;
+                const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
+                
+                // Исправлено: добавляем parseInt() для timestamp
+                let messageTime = '';
+                if (msg.timestamp) {
+                    const date = new Date(parseInt(msg.timestamp));
+                    messageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+                
+                return `
+                    <div class="message ${isOwn ? 'own' : 'other'}">
+                        <div class="message-sender">${senderName}</div>
+                        <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
+                        <div class="message-time">${messageTime}</div>
+                    </div>
+                `;
+            }).join('');
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    } catch (err) {
+        console.error('Load messages error:', err);
+    }
+}
         // ============ ОТРИСОВКА СПИСКА КОНТАКТОВ ============
         async function renderContacts() {
             const contactsList = document.getElementById('contactsList');
