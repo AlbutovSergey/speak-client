@@ -365,12 +365,6 @@
         .switch-buttons .active {
             background: #007aff;
         }
-        
-        .login-hint {
-            font-size: 11px;
-            color: #666;
-            margin-top: 15px;
-        }
     </style>
 </head>
 <body>
@@ -428,9 +422,19 @@
                 displayName = '@' + displayName;
             }
             
-            if (!displayName) { alert('Введите отображаемое имя'); return; }
-            if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
-            if (password.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; }
+            // Проверки с русскими сообщениями
+            if (!displayName) {
+                alert('Введите отображаемое имя');
+                return;
+            }
+            if (username.length < 3) {
+                alert('Логин должен содержать не менее 3 символов');
+                return;
+            }
+            if (password.length < 6) {
+                alert('Пароль должен содержать не менее 6 символов');
+                return;
+            }
             
             try {
                 const response = await apiRequest('/api/register', 'POST', {
@@ -452,10 +456,18 @@
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
-                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+                    // Русские сообщения об ошибках от сервера
+                    if (data.error === 'Username already exists') {
+                        alert('Пользователь с таким логином уже существует');
+                    } else if (data.error === 'This display name is already taken') {
+                        alert('Это отображаемое имя уже занято');
+                    } else {
+                        alert('Ошибка регистрации: ' + (data.error || 'Неизвестная ошибка'));
+                    }
                 }
             } catch (err) {
-                alert('Ошибка регистрации: ' + err.message);
+                console.error('Register error:', err);
+                alert('Ошибка соединения с сервером. Попробуйте позже.');
             }
         }
         
@@ -484,10 +496,16 @@
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
-                    alert('Ошибка: ' + (data.error || 'Неверный логин или пароль'));
+                    // Русские сообщения об ошибках входа
+                    if (data.error === 'Invalid username or password' || data.error === 'Invalid credentials') {
+                        alert('Неверный логин или пароль');
+                    } else {
+                        alert('Ошибка входа: ' + (data.error || 'Неизвестная ошибка'));
+                    }
                 }
             } catch (err) {
-                alert('Ошибка входа: ' + err.message);
+                console.error('Login error:', err);
+                alert('Ошибка соединения с сервером. Попробуйте позже.');
             }
         }
         
@@ -497,7 +515,7 @@
             location.reload();
         }
         
-        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ПО ОТОБРАЖАЕМОМУ ИМЕНИ ============
+        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ============
         async function searchUsers(query) {
             if (!query || query.length < 2) {
                 document.getElementById('searchResults').innerHTML = '';
@@ -505,7 +523,6 @@
                 return [];
             }
             
-            // Очищаем запрос от @ для поиска
             const cleanQuery = query.replace(/^@/, '');
             
             try {
@@ -513,7 +530,7 @@
                 const users = await response.json();
                 return users.filter(u => u.username !== currentUser);
             } catch (err) {
-                console.log('Search API not available yet');
+                console.log('Search API not available');
                 return [];
             }
         }
@@ -537,7 +554,7 @@
             resultsDiv.style.display = 'block';
         }
         
-        // ============ ДОБАВИТЬ КОНТАКТ ПО ЛОГИНУ ============
+        // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContactByUsername(username) {
             if (!username || username === currentUser) return;
             
@@ -545,16 +562,15 @@
                 contacts.push(username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 renderContacts();
-                showStatus(`Контакт добавлен`);
+                showStatus('Контакт добавлен');
                 document.getElementById('searchInput').value = '';
                 document.getElementById('searchResults').innerHTML = '';
                 document.getElementById('searchResults').style.display = 'none';
             } else {
-                showStatus(`Этот контакт уже есть`, true);
+                showStatus('Этот контакт уже есть', true);
             }
         }
         
-        // ============ ДОБАВИТЬ КОНТАКТ (через кнопку) ============
         async function addContact() {
             const input = prompt('Введите логин собеседника:');
             if (!input) return;
@@ -564,7 +580,7 @@
             try {
                 const response = await apiRequest(`/api/public_key/${username}`, 'GET');
                 if (response.status === 404) {
-                    showStatus(`Пользователь не найден`, true);
+                    showStatus('Пользователь не найден', true);
                     return;
                 }
                 
@@ -572,17 +588,17 @@
                     contacts.push(username);
                     localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                     renderContacts();
-                    showStatus(`Контакт добавлен`);
+                    showStatus('Контакт добавлен');
                 } else {
-                    showStatus(`Этот контакт уже есть`, true);
+                    showStatus('Этот контакт уже есть', true);
                 }
             } catch (err) {
-                showStatus(`Ошибка проверки пользователя: ${err.message}`, true);
+                showStatus('Ошибка проверки пользователя', true);
             }
         }
         
         function removeContact(username) {
-            if (confirm(`Удалить контакт?`)) {
+            if (confirm('Удалить контакт?')) {
                 contacts = contacts.filter(c => c !== username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 if (currentChat === username) {
@@ -590,7 +606,7 @@
                     document.querySelector('.chat-main').style.display = 'none';
                 }
                 renderContacts();
-                showStatus(`Контакт удалён`);
+                showStatus('Контакт удалён');
             }
         }
         
@@ -602,8 +618,6 @@
                 setTimeout(() => {
                     if (statusDiv.textContent === msg) statusDiv.textContent = '';
                 }, 3000);
-            } else {
-                console.log(msg);
             }
         }
         
@@ -622,7 +636,7 @@
                 input.value = '';
                 loadMessages();
             } catch (err) {
-                showStatus('Ошибка отправки: ' + err.message, true);
+                showStatus('Ошибка отправки сообщения', true);
             }
         }
         
@@ -667,7 +681,6 @@
                 return;
             }
             
-            // Получаем отображаемые имена для контактов
             const contactsWithNames = await Promise.all(contacts.map(async (contact) => {
                 try {
                     const response = await apiRequest(`/api/user_info/${contact}`, 'GET');
@@ -694,7 +707,6 @@
         async function selectChat(username) {
             currentChat = username;
             
-            // Получаем отображаемое имя собеседника
             let displayName = username;
             try {
                 const response = await apiRequest(`/api/user_info/${username}`, 'GET');
@@ -843,7 +855,6 @@
         window.onSearchInput = onSearchInput;
         window.searchUsers = searchUsers;
         window.showSearchResults = showSearchResults;
-        window.formatDisplayName = formatDisplayName;
     </script>
 </body>
 </html>
