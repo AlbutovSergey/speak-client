@@ -2,79 +2,252 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Speak — безопасный мессенджер</title>
+    <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; background: #0a0a0a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .container { max-width: 500px; width: 100%; text-align: center; }
-        h1 { font-size: 32px; margin-bottom: 10px; }
-        .sub { color: #888; margin-bottom: 20px; }
-        .login-area, .chat-area { background: #1a1a1a; padding: 30px; border-radius: 20px; margin-top: 20px; }
-        input, button { padding: 14px; margin: 10px 0; width: 100%; border-radius: 12px; border: none; font-size: 16px; }
-        input { background: #2c2c2e; color: white; }
-        button { background: #007aff; color: white; font-weight: bold; cursor: pointer; }
-        .switch-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
-        .switch-buttons button { background: #2c2c2e; }
-        .switch-buttons .active { background: #007aff; }
-        .message { background: #2c2c2e; padding: 12px; margin: 8px 0; border-radius: 12px; text-align: left; }
-        .message.own { background: #007aff; }
-        .chat-messages { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
-        .status { color: #4cd964; font-size: 12px; margin-top: 10px; }
-        .status.error { color: #ff3b30; }
-        #logoutBtn { background: #ff3b30; margin-top: 10px; }
-        .flex-row { display: flex; gap: 10px; }
-        .flex-row input { flex: 1; }
-        .flex-row button { width: auto; padding: 14px 24px; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; }
+        
+        /* Сайдбар со списком контактов */
+        .sidebar {
+            width: 280px;
+            background: #111111;
+            border-right: 1px solid #2c2c2e;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid #2c2c2e;
+            background: #1a1a1a;
+        }
+        
+        .sidebar-header h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        .user-info {
+            font-size: 12px;
+            color: #888;
+            word-break: break-all;
+        }
+        
+        .contacts-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin: 4px 0;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .contact-item:hover {
+            background: #2c2c2e;
+        }
+        
+        .contact-item.active {
+            background: #007aff;
+        }
+        
+        .contact-avatar {
+            width: 40px;
+            height: 40px;
+            background: #2c2c2e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 18px;
+        }
+        
+        .contact-info {
+            flex: 1;
+        }
+        
+        .contact-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .contact-username {
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .add-contact {
+            padding: 15px;
+            border-top: 1px solid #2c2c2e;
+        }
+        
+        .add-contact button {
+            width: 100%;
+            padding: 10px;
+            background: #007aff;
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        /* Основная область чата */
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0a0a0a;
+        }
+        
+        .chat-header {
+            padding: 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2c2c2e;
+        }
+        
+        .chat-header h3 {
+            font-size: 18px;
+            margin-bottom: 4px;
+        }
+        
+        .chat-header p {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .messages-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .message {
+            max-width: 70%;
+            padding: 10px 14px;
+            border-radius: 18px;
+            word-wrap: break-word;
+        }
+        
+        .message.own {
+            align-self: flex-end;
+            background: #007aff;
+        }
+        
+        .message.other {
+            align-self: flex-start;
+            background: #2c2c2e;
+        }
+        
+        .message-sender {
+            font-size: 11px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+        
+        .message-text {
+            font-size: 14px;
+        }
+        
+        .message-time {
+            font-size: 10px;
+            color: rgba(255,255,255,0.6);
+            margin-top: 4px;
+            text-align: right;
+        }
+        
+        .input-area {
+            padding: 15px 20px;
+            background: #1a1a1a;
+            border-top: 1px solid #2c2c2e;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-area input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 24px;
+            border: none;
+            background: #2c2c2e;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .input-area button {
+            padding: 12px 24px;
+            background: #007aff;
+            border: none;
+            border-radius: 24px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .logout-btn {
+            background: #ff3b30 !important;
+            margin-top: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #888;
+            margin-top: 50px;
+        }
+        
+        @media (max-width: 600px) {
+            .sidebar {
+                width: 80px;
+            }
+            .sidebar-header h2, .contact-info, .user-info {
+                display: none;
+            }
+            .contact-item {
+                justify-content: center;
+            }
+            .contact-avatar {
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔒 Speak</h1>
-        <div class="sub">Безопасный мессенджер</div>
-        
-        <div id="loginArea" class="login-area">
-            <div class="switch-buttons">
-                <button id="showLoginBtn" class="active">Вход</button>
-                <button id="showRegisterBtn">Регистрация</button>
-            </div>
-            <div id="loginForm">
-                <input type="text" id="loginUsername" placeholder="Логин">
-                <input type="password" id="loginPassword" placeholder="Пароль">
-                <button id="doLoginBtn">Войти</button>
-            </div>
-            <div id="registerForm" style="display:none;">
-                <input type="text" id="regDisplayName" placeholder="Отображаемое имя">
-                <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)">
-                <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
-                <button id="doRegisterBtn">Зарегистрироваться</button>
-            </div>
-            <div id="status" class="status"></div>
-        </div>
-        
-        <div id="chatArea" class="chat-area" style="display:none;">
-            <div id="chatMessages" class="chat-messages">Загрузка...</div>
-            <div class="flex-row">
-                <input type="text" id="messageInput" placeholder="Сообщение...">
-                <button id="sendBtn">→</button>
-            </div>
-            <button id="logoutBtn">Выйти</button>
-        </div>
-    </div>
+    <div id="app"></div>
     
     <script>
+        // ============ НАСТРОЙКИ ============
         const API_URL = 'https://speak-backend-b43k.onrender.com';
         
+        // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
+        let currentUserId = localStorage.getItem('speak_userId');
+        let currentChat = null;
+        let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         
+        // ============ ФУНКЦИИ ============
         function showStatus(msg, isError = false) {
             const statusDiv = document.getElementById('status');
-            statusDiv.textContent = msg;
-            statusDiv.className = isError ? 'status error' : 'status';
-            setTimeout(() => {
-                if (statusDiv.textContent === msg) statusDiv.textContent = '';
-            }, 3000);
+            if (statusDiv) {
+                statusDiv.textContent = msg;
+                statusDiv.className = isError ? 'status error' : 'status';
+                setTimeout(() => {
+                    if (statusDiv.textContent === msg) statusDiv.textContent = '';
+                }, 3000);
+            }
         }
         
         async function apiRequest(endpoint, method, body = null) {
@@ -87,23 +260,23 @@
             });
             
             if (response.status === 401) {
-                await logout();
+                logout();
                 throw new Error('Сессия истекла');
             }
             return response;
         }
         
+        // ============ РЕГИСТРАЦИЯ ============
         async function register() {
             const displayName = document.getElementById('regDisplayName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             
-            if (!displayName) { showStatus('Введите отображаемое имя', true); return; }
-            if (username.length < 3) { showStatus('Логин должен быть не менее 3 символов', true); return; }
-            if (password.length < 6) { showStatus('Пароль должен быть не менее 6 символов', true); return; }
+            if (!displayName) { alert('Введите отображаемое имя'); return; }
+            if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
+            if (password.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; }
             
             try {
-                showStatus('Регистрация...');
                 const response = await apiRequest('/api/register', 'POST', {
                     username, password, displayName,
                     publicKey: 'temp-key',
@@ -115,125 +288,253 @@
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
+                    currentUserId = data.userId;
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    showStatus('Регистрация успешна!');
-                    showChat();
+                    localStorage.setItem('speak_userId', currentUserId);
+                    location.reload();
                 } else {
-                    showStatus('Ошибка: ' + (data.error || 'Неизвестная ошибка'), true);
+                    alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
                 }
             } catch (err) {
-                console.error('Register error:', err);
-                showStatus('Ошибка регистрации: ' + err.message, true);
+                alert('Ошибка регистрации: ' + err.message);
             }
         }
         
+        // ============ ВХОД ============
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
             
             if (!username || !password) {
-                showStatus('Заполните все поля', true);
+                alert('Заполните все поля');
                 return;
             }
             
             try {
-                showStatus('Вход...');
                 const response = await apiRequest('/api/login', 'POST', { username, password });
                 const data = await response.json();
                 
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
+                    currentUserId = data.userId;
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    showStatus('Вход выполнен!');
-                    showChat();
+                    localStorage.setItem('speak_userId', currentUserId);
+                    location.reload();
                 } else {
-                    showStatus('Ошибка: ' + (data.error || 'Неверный логин или пароль'), true);
+                    alert('Ошибка: ' + (data.error || 'Неверный логин или пароль'));
                 }
             } catch (err) {
-                console.error('Login error:', err);
-                showStatus('Ошибка входа: ' + err.message, true);
+                alert('Ошибка входа: ' + err.message);
             }
         }
         
-        async function logout() {
-            if (authToken) {
-                try { await apiRequest('/api/logout', 'POST'); } catch(e) {}
-            }
-            authToken = null;
-            currentUser = null;
+        // ============ ВЫХОД ============
+        function logout() {
             localStorage.clear();
-            document.getElementById('chatArea').style.display = 'none';
-            document.getElementById('loginArea').style.display = 'block';
-            showStatus('Вы вышли');
+            location.reload();
         }
         
-        function showChat() {
-            document.getElementById('loginArea').style.display = 'none';
-            document.getElementById('chatArea').style.display = 'block';
-            loadMessages();
-            setInterval(loadMessages, 5000);
+        // ============ ДОБАВИТЬ КОНТАКТ ============
+        async function addContact() {
+            const username = prompt('Введите логин собеседника:');
+            if (!username || username === currentUser) return;
+            
+            if (!contacts.includes(username)) {
+                contacts.push(username);
+                localStorage.setItem('speak_contacts', JSON.stringify(contacts));
+                renderContacts();
+                showStatus(`Контакт ${username} добавлен`);
+            } else {
+                showStatus('Этот контакт уже есть', true);
+            }
         }
         
-        async function loadMessages() {
-            if (!authToken) return;
-            try {
-                const response = await apiRequest('/api/messages', 'GET');
-                const messages = await response.json();
-                const chatDiv = document.getElementById('chatMessages');
-                if (!messages || messages.length === 0) {
-                    chatDiv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">💬 Нет сообщений</div>';
-                } else {
-                    chatDiv.innerHTML = messages.map(msg => `
-                        <div class="message ${msg.sender_username === currentUser ? 'own' : ''}">
-                            <strong>${msg.sender_display_name || msg.sender_username}:</strong><br>${msg.encrypted_payload || '[сообщение]'}
-                        </div>
-                    `).join('');
-                }
-            } catch (err) { console.error(err); }
-        }
-        
+        // ============ ОТПРАВКА СООБЩЕНИЯ ============
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
-            if (!text) return;
-            const recipient = prompt('Кому отправить? (логин)');
-            if (!recipient) return;
+            if (!text || !currentChat) return;
+            
             try {
                 await apiRequest('/api/send_message', 'POST', {
-                    recipientUsername: recipient,
+                    recipientUsername: currentChat,
                     encryptedPayload: text,
                     nonce: 'temp-nonce'
                 });
                 input.value = '';
-                await loadMessages();
-            } catch (err) { showStatus('Ошибка отправки', true); }
+                loadMessages();
+            } catch (err) {
+                showStatus('Ошибка отправки: ' + err.message, true);
+            }
         }
         
-        document.getElementById('showLoginBtn').onclick = () => {
+        // ============ ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ТЕКУЩЕГО ЧАТА ============
+        async function loadMessages() {
+            if (!authToken || !currentChat) return;
+            
+            try {
+                const response = await apiRequest('/api/messages', 'GET');
+                const allMessages = await response.json();
+                
+                // Фильтруем сообщения для текущего собеседника
+                const chatMessages = allMessages.filter(msg => 
+                    msg.sender_username === currentChat || 
+                    (msg.sender_username === currentUser && msg.recipient_username === currentChat)
+                );
+                
+                const messagesDiv = document.getElementById('messagesArea');
+                if (chatMessages.length === 0) {
+                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
+                } else {
+                    messagesDiv.innerHTML = chatMessages.map(msg => `
+                        <div class="message ${msg.sender_username === currentUser ? 'own' : 'other'}">
+                            <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
+                            <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
+                        </div>
+                    `).join('');
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                }
+            } catch (err) {
+                console.error('Load messages error:', err);
+            }
+        }
+        
+        // ============ ОТРИСОВКА СПИСКА КОНТАКТОВ ============
+        function renderContacts() {
+            const contactsList = document.getElementById('contactsList');
+            if (!contactsList) return;
+            
+            if (contacts.length === 0) {
+                contactsList.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Нет контактов<br>➕ Добавьте собеседника</div>';
+                return;
+            }
+            
+            contactsList.innerHTML = contacts.map(contact => `
+                <div class="contact-item ${currentChat === contact ? 'active' : ''}" onclick="selectChat('${contact}')">
+                    <div class="contact-avatar">👤</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${contact}</div>
+                        <div class="contact-username">@${contact}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // ============ ВЫБОР ЧАТА ============
+        function selectChat(username) {
+            currentChat = username;
+            renderContacts();
+            document.getElementById('chatHeaderName').textContent = username;
+            document.getElementById('chatHeaderStatus').textContent = 'online';
+            loadMessages();
+            
+            // Показываем область чата, скрываем приветствие
+            document.querySelector('.chat-main').style.display = 'flex';
+        }
+        
+        // ============ ИНТЕРФЕЙС ВХОДА ============
+        function renderLogin() {
+            document.getElementById('app').innerHTML = `
+                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #0a0a0a;">
+                    <div style="background: #1a1a1a; padding: 40px; border-radius: 20px; width: 350px; text-align: center;">
+                        <h1 style="margin-bottom: 10px;">🔒 Speak</h1>
+                        <p style="color: #888; margin-bottom: 30px;">Безопасный мессенджер</p>
+                        
+                        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                            <button id="showLoginBtn" style="flex:1; background: #007aff;" onclick="showLoginForm()">Вход</button>
+                            <button id="showRegisterBtn" style="flex:1; background: #2c2c2e;" onclick="showRegisterForm()">Регистрация</button>
+                        </div>
+                        
+                        <div id="loginForm">
+                            <input type="text" id="loginUsername" placeholder="Логин" style="width:100%; margin-bottom:10px;">
+                            <input type="password" id="loginPassword" placeholder="Пароль" style="width:100%; margin-bottom:10px;">
+                            <button onclick="login()" style="width:100%;">Войти</button>
+                        </div>
+                        
+                        <div id="registerForm" style="display:none;">
+                            <input type="text" id="regDisplayName" placeholder="Отображаемое имя" style="width:100%; margin-bottom:10px;">
+                            <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" style="width:100%; margin-bottom:10px;">
+                            <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)" style="width:100%; margin-bottom:10px;">
+                            <button onclick="register()" style="width:100%;">Зарегистрироваться</button>
+                        </div>
+                        
+                        <div id="status" class="status" style="margin-top:20px;"></div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showLoginForm() {
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('registerForm').style.display = 'none';
-            document.getElementById('showLoginBtn').classList.add('active');
-            document.getElementById('showRegisterBtn').classList.remove('active');
-        };
+        }
         
-        document.getElementById('showRegisterBtn').onclick = () => {
+        function showRegisterForm() {
             document.getElementById('loginForm').style.display = 'none';
             document.getElementById('registerForm').style.display = 'block';
-            document.getElementById('showRegisterBtn').classList.add('active');
-            document.getElementById('showLoginBtn').classList.remove('active');
-        };
-        
-        document.getElementById('doLoginBtn').onclick = login;
-        document.getElementById('doRegisterBtn').onclick = register;
-        document.getElementById('sendBtn').onclick = sendMessage;
-        document.getElementById('logoutBtn').onclick = logout;
-        
-        if (authToken && currentUser) {
-            showChat();
         }
+        
+        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА ============
+        function renderChat() {
+            document.getElementById('app').innerHTML = `
+                <div class="sidebar">
+                    <div class="sidebar-header">
+                        <h2>💬 Speak</h2>
+                        <div class="user-info">${currentUser}</div>
+                    </div>
+                    
+                    <div class="contacts-list" id="contactsList"></div>
+                    
+                    <div class="add-contact">
+                        <button onclick="addContact()">➕ Добавить контакт</button>
+                        <button class="logout-btn" onclick="logout()" style="margin-top:10px;">🚪 Выйти</button>
+                    </div>
+                </div>
+                
+                <div class="chat-main" style="display: none;">
+                    <div class="chat-header">
+                        <h3 id="chatHeaderName">Выберите чат</h3>
+                        <p id="chatHeaderStatus">Выберите собеседника из списка</p>
+                    </div>
+                    
+                    <div class="messages-area" id="messagesArea">
+                        <div class="empty-state">👈 Выберите чат слева</div>
+                    </div>
+                    
+                    <div class="input-area">
+                        <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
+                        <button onclick="sendMessage()">→</button>
+                    </div>
+                </div>
+            `;
+            
+            renderContacts();
+            
+            // Автоматическое обновление сообщений
+            setInterval(() => {
+                if (currentChat) loadMessages();
+            }, 3000);
+        }
+        
+        // ============ ЗАПУСК ============
+        if (authToken && currentUser) {
+            renderChat();
+        } else {
+            renderLogin();
+        }
+        
+        // Делаем функции глобальными
+        window.register = register;
+        window.login = login;
+        window.logout = logout;
+        window.addContact = addContact;
+        window.sendMessage = sendMessage;
+        window.selectChat = selectChat;
+        window.showLoginForm = showLoginForm;
+        window.showRegisterForm = showRegisterForm;
     </script>
 </body>
 </html>
