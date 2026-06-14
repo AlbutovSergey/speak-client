@@ -238,13 +238,14 @@
             flex-direction: column;
             gap: 12px;
         } 
-                      /* Сообщения */
+               /* Сообщения */
         .message {
             max-width: 85%;
             padding: 8px 12px;
             border-radius: 18px;
             word-wrap: break-word;
-            display: inline-block;
+            display: flex;
+            flex-direction: column;
         }
         
         .message.own {
@@ -264,15 +265,14 @@
         .message-text {
             font-size: 14px;
             line-height: 1.3;
-            display: inline;
         }
         
         .message-time {
             font-size: 9px;
             color: rgba(255,255,255,0.6);
-            display: inline-block;
-            margin-left: 8px;
-            vertical-align: middle;
+            display: block;
+            text-align: right;
+            margin-top: 4px;
         }
         /* Панель ввода сообщения */
         .input-area {
@@ -763,44 +763,45 @@
             }
         }
         
-         // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
-        async function loadMessages() {
-            if (!authToken || !currentChat) return;
-            
-            try {
-                const response = await apiRequest('/api/messages', 'GET');
-                const allMessages = await response.json();
+                   // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
+            async function loadMessages() {
+                if (!authToken || !currentChat) return;
                 
-                const chatMessages = allMessages.filter(msg => 
-                    (msg.sender_username === currentUser && msg.recipient_username === currentChat) ||
-                    (msg.sender_username === currentChat && msg.recipient_username === currentUser)
-                );
-                
-                const messagesDiv = document.getElementById('messagesArea');
-                if (!messagesDiv) return;
-                
-                if (chatMessages.length === 0) {
-                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
-                } else {
-                    messagesDiv.innerHTML = chatMessages.map(msg => {
-                        const isOwn = msg.sender_username === currentUser;
-                        let messageTime = '';
-                        if (msg.timestamp) {
-                            const date = new Date(parseInt(msg.timestamp));
-                            messageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                        }
-                        return `
-                            <div class="message ${isOwn ? 'own' : 'other'}">
-                                <div class="message-text">${msg.encrypted_payload || '[сообщение]'} <span class="message-time">${messageTime}</span></div>
-                            </div>
-                        `;
-                    }).join('');
-                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                try {
+                    const response = await apiRequest('/api/messages', 'GET');
+                    const allMessages = await response.json();
+                    
+                    const chatMessages = allMessages.filter(msg => 
+                        (msg.sender_username === currentUser && msg.recipient_username === currentChat) ||
+                        (msg.sender_username === currentChat && msg.recipient_username === currentUser)
+                    );
+                    
+                    const messagesDiv = document.getElementById('messagesArea');
+                    if (!messagesDiv) return;
+                    
+                    if (chatMessages.length === 0) {
+                        messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
+                    } else {
+                        messagesDiv.innerHTML = chatMessages.map(msg => {
+                            const isOwn = msg.sender_username === currentUser;
+                            let messageTime = '';
+                            if (msg.timestamp) {
+                                const date = new Date(parseInt(msg.timestamp));
+                                messageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            }
+                            return `
+                                <div class="message ${isOwn ? 'own' : 'other'}">
+                                    <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
+                                    <div class="message-time">${messageTime}</div>
+                                </div>
+                            `;
+                        }).join('');
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error('Load messages error:', err);
                 }
-            } catch (err) {
-                console.error('Load messages error:', err);
             }
-        }
                // ============ ОТРИСОВКА СТРАНИЦЫ КОНТАКТОВ ============
         async function renderContactsPage() {
             const contactsContainer = document.getElementById('contactsList');
