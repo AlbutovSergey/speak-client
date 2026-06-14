@@ -2,20 +2,18 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Speak — безопасный мессенджер</title>
-    <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        body { font-family: system-ui, sans-serif; background: #0a0a0a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
         .container { max-width: 500px; width: 100%; text-align: center; }
         h1 { font-size: 32px; margin-bottom: 10px; }
-        .sub { color: #888; font-size: 14px; margin-bottom: 20px; }
+        .sub { color: #888; margin-bottom: 20px; }
         .login-area, .chat-area { background: #1a1a1a; padding: 30px; border-radius: 20px; margin-top: 20px; }
         input, button { padding: 14px; margin: 10px 0; width: 100%; border-radius: 12px; border: none; font-size: 16px; }
         input { background: #2c2c2e; color: white; }
         button { background: #007aff; color: white; font-weight: bold; cursor: pointer; }
-        button:hover { background: #0055bb; }
         .switch-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
         .switch-buttons button { background: #2c2c2e; }
         .switch-buttons .active { background: #007aff; }
@@ -41,13 +39,13 @@
                 <button id="showRegisterBtn">Регистрация</button>
             </div>
             <div id="loginForm">
-                <input type="text" id="loginUsername" placeholder="Логин" autocomplete="off">
+                <input type="text" id="loginUsername" placeholder="Логин">
                 <input type="password" id="loginPassword" placeholder="Пароль">
                 <button id="doLoginBtn">Войти</button>
             </div>
             <div id="registerForm" style="display:none;">
-                <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
-                <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" autocomplete="off">
+                <input type="text" id="regDisplayName" placeholder="Отображаемое имя">
+                <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)">
                 <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                 <button id="doRegisterBtn">Зарегистрироваться</button>
             </div>
@@ -64,82 +62,12 @@
         </div>
     </div>
     
-    <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/libsodium-wrappers.min.js"></script>
-    
     <script>
-        // ============ НАСТРОЙКИ ============
         const API_URL = 'https://speak-backend-b43k.onrender.com';
         
-        // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
-        let sodiumReady = false;
-        let sodium = null;
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
-        let currentUserId = localStorage.getItem('speak_userId');
-        let privateKey = localStorage.getItem('speak_privateKey');
         
-        // ============ ИНИЦИАЛИЗАЦИЯ КРИПТОГРАФИИ ============
-        async function initSodium() {
-            return new Promise((resolve) => {
-                if (window.sodium && window.sodium.ready) {
-                    window.sodium.ready.then(() => {
-                        sodium = window.sodium;
-                        sodiumReady = true;
-                        console.log('[Speak] Sodium ready');
-                        resolve();
-                    });
-                } else {
-                    setTimeout(() => {
-                        initSodium().then(resolve);
-                    }, 100);
-                }
-            });
-        }
-        
-        // Генерация ключей (только после загрузки sodium)
-        async function generateKeys() {
-            if (!sodiumReady) {
-                await initSodium();
-            }
-            const keypair = sodium.crypto_box_keypair();
-            const publicKey = sodium.to_base64(keypair.publicKey);
-            const privateKeyBase64 = sodium.to_base64(keypair.privateKey);
-            const signKeypair = sodium.crypto_sign_keypair();
-            const signPublicKey = sodium.to_base64(signKeypair.publicKey);
-            const signPrivateKey = sodium.to_base64(signKeypair.privateKey);
-            return { publicKey, privateKey: privateKeyBase64, signPublicKey, signPrivateKey };
-        }
-        
-        // Шифрование
-        async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
-            if (!sodiumReady) await initSodium();
-            const recipientPub = sodium.from_base64(recipientPublicKey);
-            const senderPriv = sodium.from_base64(senderPrivateKey);
-            const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-            const encrypted = sodium.crypto_box_easy(
-                sodium.from_string(message),
-                nonce,
-                recipientPub,
-                senderPriv
-            );
-            return { payload: sodium.to_base64(encrypted), nonce: sodium.to_base64(nonce) };
-        }
-        
-        // Расшифровка
-        async function decryptMessage(encryptedPayload, nonce, senderPublicKey, recipientPrivateKey) {
-            if (!sodiumReady) await initSodium();
-            const senderPub = sodium.from_base64(senderPublicKey);
-            const recipientPriv = sodium.from_base64(recipientPrivateKey);
-            const decrypted = sodium.crypto_box_open_easy(
-                sodium.from_base64(encryptedPayload),
-                sodium.from_base64(nonce),
-                senderPub,
-                recipientPriv
-            );
-            return sodium.to_string(decrypted);
-        }
-        
-        // ============ ФУНКЦИИ СТАТУСА ============
         function showStatus(msg, isError = false) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = msg;
@@ -149,7 +77,6 @@
             }, 3000);
         }
         
-        // ============ API ЗАПРОСЫ ============
         async function apiRequest(endpoint, method, body = null) {
             const headers = { 'Content-Type': 'application/json' };
             if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
@@ -166,7 +93,6 @@
             return response;
         }
         
-        // ============ РЕГИСТРАЦИЯ ============
         async function register() {
             const displayName = document.getElementById('regDisplayName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
@@ -178,30 +104,19 @@
             
             try {
                 showStatus('Регистрация...');
-                
-                // Ждём загрузку sodium и генерируем ключи
-                await initSodium();
-                const keys = await generateKeys();
-                
                 const response = await apiRequest('/api/register', 'POST', {
                     username, password, displayName,
-                    publicKey: keys.publicKey,
-                    signaturePublicKey: keys.signPublicKey,
-                    signaturePrivateKey: keys.signPrivateKey
+                    publicKey: 'temp-key',
+                    signaturePublicKey: 'temp-sig',
+                    signaturePrivateKey: 'temp-priv'
                 });
                 const data = await response.json();
                 
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentUserId = data.userId;
-                    privateKey = keys.privateKey;
-                    
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_userId', currentUserId);
-                    localStorage.setItem('speak_privateKey', privateKey);
-                    
                     showStatus('Регистрация успешна!');
                     showChat();
                 } else {
@@ -213,7 +128,6 @@
             }
         }
         
-        // ============ ВХОД ============
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
@@ -225,22 +139,14 @@
             
             try {
                 showStatus('Вход...');
-                await initSodium();
-                
                 const response = await apiRequest('/api/login', 'POST', { username, password });
                 const data = await response.json();
                 
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentUserId = data.userId;
-                    privateKey = data.signature_private_key;
-                    
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_userId', currentUserId);
-                    localStorage.setItem('speak_privateKey', privateKey);
-                    
                     showStatus('Вход выполнен!');
                     showChat();
                 } else {
@@ -252,22 +158,18 @@
             }
         }
         
-        // ============ ВЫХОД ============
         async function logout() {
             if (authToken) {
                 try { await apiRequest('/api/logout', 'POST'); } catch(e) {}
             }
             authToken = null;
             currentUser = null;
-            currentUserId = null;
-            privateKey = null;
             localStorage.clear();
             document.getElementById('chatArea').style.display = 'none';
             document.getElementById('loginArea').style.display = 'block';
             showStatus('Вы вышли');
         }
         
-        // ============ ПОКАЗАТЬ ЧАТ ============
         function showChat() {
             document.getElementById('loginArea').style.display = 'none';
             document.getElementById('chatArea').style.display = 'block';
@@ -275,102 +177,41 @@
             setInterval(loadMessages, 5000);
         }
         
-        // ============ ОТПРАВКА СООБЩЕНИЯ ============
+        async function loadMessages() {
+            if (!authToken) return;
+            try {
+                const response = await apiRequest('/api/messages', 'GET');
+                const messages = await response.json();
+                const chatDiv = document.getElementById('chatMessages');
+                if (!messages || messages.length === 0) {
+                    chatDiv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">💬 Нет сообщений</div>';
+                } else {
+                    chatDiv.innerHTML = messages.map(msg => `
+                        <div class="message ${msg.sender_username === currentUser ? 'own' : ''}">
+                            <strong>${msg.sender_display_name || msg.sender_username}:</strong><br>${msg.encrypted_payload || '[сообщение]'}
+                        </div>
+                    `).join('');
+                }
+            } catch (err) { console.error(err); }
+        }
+        
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
             if (!text) return;
-            
-            const recipient = prompt('Кому отправить? (логин получателя)');
+            const recipient = prompt('Кому отправить? (логин)');
             if (!recipient) return;
-            
             try {
-                await initSodium();
-                
-                const keyResponse = await apiRequest(`/api/public_key/${recipient}`, 'GET');
-                const recipientData = await keyResponse.json();
-                
-                if (!recipientData.public_key) {
-                    showStatus('Не удалось получить ключ получателя', true);
-                    return;
-                }
-                
-                const encrypted = await encryptMessage(text, recipientData.public_key, privateKey);
-                
                 await apiRequest('/api/send_message', 'POST', {
                     recipientUsername: recipient,
-                    encryptedPayload: encrypted.payload,
-                    nonce: encrypted.nonce
+                    encryptedPayload: text,
+                    nonce: 'temp-nonce'
                 });
-                
                 input.value = '';
-                showStatus('Сообщение отправлено!');
                 await loadMessages();
-            } catch (err) {
-                console.error('Send error:', err);
-                showStatus('Ошибка отправки: ' + err.message, true);
-            }
+            } catch (err) { showStatus('Ошибка отправки', true); }
         }
         
-        // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
-        async function loadMessages() {
-            if (!authToken) return;
-            try {
-                await initSodium();
-                
-                const response = await apiRequest('/api/messages', 'GET');
-                const messages = await response.json();
-                const chatDiv = document.getElementById('chatMessages');
-                
-                if (!messages || messages.length === 0) {
-                    chatDiv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">💬 Нет сообщений</div>';
-                    return;
-                }
-                
-                const decryptedMessages = [];
-                for (const msg of messages) {
-                    try {
-                        const keyResponse = await apiRequest(`/api/public_key/${msg.sender_username}`, 'GET');
-                        const senderData = await keyResponse.json();
-                        
-                        const decryptedText = await decryptMessage(
-                            msg.encrypted_payload,
-                            msg.nonce,
-                            senderData.public_key,
-                            privateKey
-                        );
-                        
-                        decryptedMessages.push({
-                            text: decryptedText,
-                            sender: msg.sender_username,
-                            displayName: msg.sender_display_name || msg.sender_username,
-                            isOwn: msg.sender_username === currentUser
-                        });
-                    } catch (e) {
-                        console.error('Decryption error:', e);
-                        decryptedMessages.push({
-                            text: '🔒 Зашифрованное сообщение',
-                            sender: msg.sender_username,
-                            displayName: msg.sender_display_name || msg.sender_username,
-                            isOwn: msg.sender_username === currentUser
-                        });
-                    }
-                }
-                
-                chatDiv.innerHTML = decryptedMessages.map(msg => `
-                    <div class="message ${msg.isOwn ? 'own' : ''}">
-                        <strong>${msg.isOwn ? 'Вы' : msg.displayName}:</strong><br>
-                        ${msg.text}
-                    </div>
-                `).join('');
-                chatDiv.scrollTop = chatDiv.scrollHeight;
-                
-            } catch (err) {
-                console.error('Load messages error:', err);
-            }
-        }
-        
-        // ============ НАВЕШИВАНИЕ ОБРАБОТЧИКОВ ============
         document.getElementById('showLoginBtn').onclick = () => {
             document.getElementById('loginForm').style.display = 'block';
             document.getElementById('registerForm').style.display = 'none';
@@ -390,19 +231,9 @@
         document.getElementById('sendBtn').onclick = sendMessage;
         document.getElementById('logoutBtn').onclick = logout;
         
-        document.getElementById('loginPassword').onkeypress = (e) => { if (e.key === 'Enter') login(); };
-        document.getElementById('regPassword').onkeypress = (e) => { if (e.key === 'Enter') register(); };
-        document.getElementById('messageInput').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-        
-        // ============ ЗАПУСК ============
-        async function start() {
-            await initSodium();
-            if (authToken && currentUser) {
-                showChat();
-            }
+        if (authToken && currentUser) {
+            showChat();
         }
-        
-        start();
     </script>
 </body>
 </html>
