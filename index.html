@@ -7,50 +7,72 @@
     <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; overflow: hidden; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Сайдбар со списком контактов */
-        .sidebar {
-            width: 280px;
-            background: #111111;
-            border-right: 1px solid #2c2c2e;
+        /* Основной контейнер */
+        .app-container {
             display: flex;
             flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* Шапка */
+        .header {
+            padding: 16px 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #2c2c2e;
+            text-align: center;
             flex-shrink: 0;
         }
         
-        .sidebar-header {
-            padding: 20px;
-            border-bottom: 1px solid #2c2c2e;
-            background: #1a1a1a;
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 4px;
         }
         
-        .sidebar-header h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        .user-info {
+        .header .user-info {
             font-size: 12px;
             color: #888;
-            word-break: break-all;
         }
         
-        .user-info span {
+        .header .user-info span {
             color: #007aff;
         }
         
-        /* Поле поиска */
-        .search-area {
-            padding: 15px;
-            border-bottom: 1px solid #2c2c2e;
-            background: #0f0f0f;
+        /* Область содержимого (переключается между вкладками) */
+        .content-area {
+            flex: 1;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
         
-        .search-area input {
+        .tab-content {
+            flex: 1;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Страница контактов */
+        .contacts-page {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+        
+        .search-box {
+            margin-bottom: 16px;
+        }
+        
+        .search-box input {
             width: 100%;
-            padding: 10px;
-            border-radius: 20px;
+            padding: 12px;
+            border-radius: 24px;
             border: none;
             background: #2c2c2e;
             color: white;
@@ -58,128 +80,132 @@
             outline: none;
         }
         
-        .search-area input::placeholder {
-            color: #666;
-        }
-        
         .search-results {
-            position: absolute;
             background: #1a1a1a;
             border-radius: 12px;
-            width: 250px;
-            z-index: 100;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            margin-top: 5px;
+            margin-bottom: 16px;
         }
         
         .search-result-item {
-            padding: 10px 15px;
+            padding: 12px 16px;
             cursor: pointer;
-            border-radius: 8px;
+            border-bottom: 1px solid #2c2c2e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .search-result-item:hover {
             background: #2c2c2e;
         }
         
-        .search-result-name {
-            font-weight: bold;
-            font-size: 14px;
+        .search-result-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
         }
         
-        .search-result-login {
+        .search-result-info {
+            flex: 1;
+        }
+        
+        .search-result-name {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+        
+        .search-result-username {
             font-size: 11px;
             color: #888;
         }
         
         .contacts-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
         
-        .contact-item {
+        .contact-card {
             display: flex;
             align-items: center;
             padding: 12px;
-            margin: 4px 0;
+            background: #1a1a1a;
             border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
+            gap: 12px;
         }
         
-        .contact-item:hover {
+        .contact-card:hover {
             background: #2c2c2e;
         }
         
-        .contact-item.active {
-            background: #007aff;
-        }
-        
         .contact-avatar {
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             background: #2c2c2e;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
-            font-size: 18px;
+            font-size: 20px;
+            flex-shrink: 0;
         }
         
-        .contact-info {
+        .contact-card-info {
             flex: 1;
         }
         
-        .contact-name {
+        .contact-card-name {
             font-weight: bold;
             margin-bottom: 4px;
         }
         
-        .contact-login {
+        .contact-card-username {
             font-size: 11px;
             color: #888;
         }
         
-        .add-contact {
-            padding: 15px;
-            border-top: 1px solid #2c2c2e;
+        .delete-contact {
+            color: #ff3b30;
+            cursor: pointer;
+            padding: 8px;
         }
         
-        .add-contact button {
-            width: 100%;
-            padding: 10px;
-            background: #007aff;
+        .add-contact-btn {
+            margin-top: 16px;
+            padding: 12px;
+            background: #2c2c2e;
             border: none;
             border-radius: 12px;
             color: white;
             font-weight: bold;
             cursor: pointer;
+            width: 100%;
         }
         
-        .logout-btn {
-            background: #ff3b30 !important;
-            margin-top: 10px;
-        }
-        
-        /* Основная область чата */
-        .chat-main {
+        /* Страница чата */
+        .chat-page {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: #0a0a0a;
+            overflow: hidden;
         }
         
         .chat-header {
-            padding: 20px;
+            padding: 16px 20px;
             background: #1a1a1a;
             border-bottom: 1px solid #2c2c2e;
-            position: relative;
+            text-align: center;
+            flex-shrink: 0;
         }
         
         .chat-header h3 {
-            font-size: 18px;
+            font-size: 16px;
             margin-bottom: 4px;
         }
         
@@ -188,21 +214,21 @@
         }
         
         .chat-header p {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
         }
         
         .messages-area {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
         
         .message {
-            max-width: 70%;
+            max-width: 75%;
             padding: 10px 14px;
             border-radius: 18px;
             word-wrap: break-word;
@@ -236,11 +262,12 @@
         }
         
         .input-area {
-            padding: 15px 20px;
+            padding: 12px 16px;
             background: #1a1a1a;
             border-top: 1px solid #2c2c2e;
             display: flex;
             gap: 10px;
+            flex-shrink: 0;
         }
         
         .input-area input {
@@ -259,7 +286,7 @@
         }
         
         .input-area button {
-            padding: 12px 24px;
+            padding: 12px 20px;
             background: #007aff;
             border: none;
             border-radius: 24px;
@@ -274,6 +301,32 @@
             margin-top: 50px;
         }
         
+        /* Нижние вкладки */
+        .bottom-tabs {
+            display: flex;
+            background: #111111;
+            border-top: 1px solid #2c2c2e;
+            flex-shrink: 0;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 14px;
+            text-align: center;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            color: #007aff;
+            border-top: 2px solid #007aff;
+            background: #1a1a1a;
+        }
+        
         .status {
             color: #4cd964;
             font-size: 12px;
@@ -283,90 +336,6 @@
         
         .status.error {
             color: #ff3b30;
-        }
-        
-        /* Кнопка меню для мобильной версии */
-        .menu-toggle {
-            display: none;
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
-            background: #007aff;
-            border: none;
-            border-radius: 30px;
-            padding: 10px 14px;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-        }
-        
-        /* Затемнение фона при открытом меню */
-        .overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 99;
-        }
-        
-        .overlay.active {
-            display: block;
-        }
-        
-        /* Мобильная версия */
-        @media (max-width: 768px) {
-            body {
-                position: relative;
-            }
-            
-            .sidebar {
-                position: fixed;
-                left: 0;
-                top: 0;
-                width: 85%;
-                max-width: 280px;
-                height: 100vh;
-                z-index: 1000;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-            
-            .sidebar.open {
-                transform: translateX(0);
-            }
-            
-            .chat-main {
-                width: 100%;
-            }
-            
-            .menu-toggle {
-                display: block;
-            }
-            
-            .chat-header {
-                padding-left: 60px;
-                padding-top: 15px;
-                padding-bottom: 15px;
-            }
-            
-            .chat-header h3 {
-                font-size: 16px;
-            }
-            
-            .message {
-                max-width: 85%;
-            }
-        }
-        
-        @media (min-width: 769px) {
-            .menu-toggle {
-                display: none;
-            }
         }
         
         /* Стили для экрана входа */
@@ -440,12 +409,6 @@
         .switch-buttons .active {
             background: #007aff;
         }
-        
-        .login-hint {
-            font-size: 11px;
-            color: #666;
-            margin-top: 15px;
-        }
     </style>
 </head>
 <body>
@@ -462,29 +425,12 @@
         let currentUserId = localStorage.getItem('speak_userId');
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
+        let currentTab = 'contacts';
         let searchTimeout = null;
         
         function formatDisplayName(name) {
             if (!name) return '';
             return name.startsWith('@') ? name : `@${name}`;
-        }
-        
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.overlay');
-            if (sidebar) {
-                sidebar.classList.toggle('open');
-                if (overlay) overlay.classList.toggle('active');
-            }
-        }
-        
-        function closeSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.overlay');
-            if (sidebar) {
-                sidebar.classList.remove('open');
-                if (overlay) overlay.classList.remove('active');
-            }
         }
         
         async function apiRequest(endpoint, method, body = null) {
@@ -529,8 +475,11 @@
             
             resultsDiv.innerHTML = results.map(user => `
                 <div class="search-result-item" onclick="addContactByUsername('${user.username}', '${user.display_name}')">
-                    <div class="search-result-name">${formatDisplayName(user.display_name || user.username)}</div>
-                    <div class="search-result-login">${user.username}</div>
+                    <div class="search-result-avatar">👤</div>
+                    <div class="search-result-info">
+                        <div class="search-result-name">${formatDisplayName(user.display_name || user.username)}</div>
+                        <div class="search-result-username">${user.username}</div>
+                    </div>
                 </div>
             `).join('');
             resultsDiv.style.display = 'block';
@@ -542,7 +491,7 @@
             if (!contacts.includes(username)) {
                 contacts.push(username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
-                renderContacts();
+                renderContactsPage();
                 document.getElementById('searchInput').value = '';
                 document.getElementById('searchResults').innerHTML = '';
                 document.getElementById('searchResults').style.display = 'none';
@@ -681,7 +630,7 @@
                 if (!contacts.includes(foundUser.username)) {
                     contacts.push(foundUser.username);
                     localStorage.setItem('speak_contacts', JSON.stringify(contacts));
-                    renderContacts();
+                    renderContactsPage();
                     showStatus(`Контакт ${formatDisplayName(foundUser.display_name)} добавлен`);
                 } else {
                     showStatus(`Контакт ${formatDisplayName(foundUser.display_name)} уже есть`, true);
@@ -697,9 +646,8 @@
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 if (currentChat === username) {
                     currentChat = null;
-                    document.querySelector('.chat-main').style.display = 'none';
                 }
-                renderContacts();
+                renderContactsPage();
                 showStatus('Контакт удалён');
             }
         }
@@ -735,54 +683,52 @@
         }
         
         // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
-async function loadMessages() {
-    if (!authToken || !currentChat) return;
-    
-    try {
-        const response = await apiRequest('/api/messages', 'GET');
-        const allMessages = await response.json();
-        
-        const chatMessages = allMessages.filter(msg => 
-            msg.sender_username === currentChat || 
-            msg.sender_username === currentUser
-        );
-        
-        const messagesDiv = document.getElementById('messagesArea');
-        if (chatMessages.length === 0) {
-            messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
-        } else {
-            messagesDiv.innerHTML = chatMessages.map(msg => {
-                const isOwn = msg.sender_username === currentUser;
-                const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
+        async function loadMessages() {
+            if (!authToken || !currentChat) return;
+            
+            try {
+                const response = await apiRequest('/api/messages', 'GET');
+                const allMessages = await response.json();
                 
-                // Исправлено: добавляем parseInt() для timestamp
-                let messageTime = '';
-                if (msg.timestamp) {
-                    const date = new Date(parseInt(msg.timestamp));
-                    messageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const chatMessages = allMessages.filter(msg => 
+                    msg.sender_username === currentChat || 
+                    msg.sender_username === currentUser
+                );
+                
+                const messagesDiv = document.getElementById('messagesArea');
+                if (chatMessages.length === 0) {
+                    messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
+                } else {
+                    messagesDiv.innerHTML = chatMessages.map(msg => {
+                        const isOwn = msg.sender_username === currentUser;
+                        const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
+                        let messageTime = '';
+                        if (msg.timestamp) {
+                            const date = new Date(parseInt(msg.timestamp));
+                            messageTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        }
+                        return `
+                            <div class="message ${isOwn ? 'own' : 'other'}">
+                                <div class="message-sender">${senderName}</div>
+                                <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
+                                <div class="message-time">${messageTime}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 }
-                
-                return `
-                    <div class="message ${isOwn ? 'own' : 'other'}">
-                        <div class="message-sender">${senderName}</div>
-                        <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
-                        <div class="message-time">${messageTime}</div>
-                    </div>
-                `;
-            }).join('');
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (err) {
+                console.error('Load messages error:', err);
+            }
         }
-    } catch (err) {
-        console.error('Load messages error:', err);
-    }
-}
-        // ============ ОТРИСОВКА СПИСКА КОНТАКТОВ ============
-        async function renderContacts() {
-            const contactsList = document.getElementById('contactsList');
-            if (!contactsList) return;
+        
+        // ============ ОТРИСОВКА СТРАНИЦЫ КОНТАКТОВ ============
+        async function renderContactsPage() {
+            const contactsContainer = document.getElementById('contactsList');
+            if (!contactsContainer) return;
             
             if (contacts.length === 0) {
-                contactsList.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Нет контактов<br>➕ Добавьте собеседника</div>';
+                contactsContainer.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">Нет контактов<br>➕ Добавьте собеседника</div>';
                 return;
             }
             
@@ -796,61 +742,73 @@ async function loadMessages() {
                 }
             }));
             
-            contactsList.innerHTML = contactsWithNames.map(contact => `
-                <div class="contact-item ${currentChat === contact.username ? 'active' : ''}" onclick="selectChat('${contact.username}')">
+            contactsContainer.innerHTML = contactsWithNames.map(contact => `
+                <div class="contact-card" onclick="selectChat('${contact.username}')">
                     <div class="contact-avatar">👤</div>
-                    <div class="contact-info">
-                        <div class="contact-name">${formatDisplayName(contact.displayName)}</div>
-                        <div class="contact-login">${contact.username}</div>
+                    <div class="contact-card-info">
+                        <div class="contact-card-name">${formatDisplayName(contact.displayName)}</div>
+                        <div class="contact-card-username">${contact.username}</div>
                     </div>
-                    <div style="cursor:pointer; opacity:0.5; margin-left:auto;" onclick="event.stopPropagation(); removeContact('${contact.username}')">🗑️</div>
+                    <div class="delete-contact" onclick="event.stopPropagation(); removeContact('${contact.username}')">🗑️</div>
                 </div>
             `).join('');
         }
         
         // ============ ВЫБОР ЧАТА ============
-async function selectChat(username) {
-    currentChat = username;
-    
-    // Получаем токен из localStorage
-    const token = localStorage.getItem('speak_token');
-    
-    // Запрос с токеном
-    let displayName = username;
-    try {
-        const response = await fetch(`${API_URL}/api/user_info/${username}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+        async function selectChat(username) {
+            currentChat = username;
+            currentTab = 'chats';
+            
+            // Переключаем вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('chatsTab').classList.add('active');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('chatsTabBtn').classList.add('active');
+            
+            // Получаем информацию о собеседнике
+            let displayName = username;
+            try {
+                const token = localStorage.getItem('speak_token');
+                const response = await fetch(`${API_URL}/api/user_info/${username}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    displayName = userInfo.display_name || username;
+                }
+            } catch (err) {
+                console.error('Failed to get user info:', err);
             }
-        });
-        
-        if (response.ok) {
-            const userInfo = await response.json();
-            displayName = userInfo.display_name || username;
-        } else if (response.status === 401) {
-            console.log("Token expired, redirecting to login");
-            logout();
-            return;
+            
+            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
+            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
+            loadMessages();
+            
+            // Автообновление сообщений
+            if (window.messageInterval) clearInterval(window.messageInterval);
+            window.messageInterval = setInterval(() => {
+                if (currentChat) loadMessages();
+            }, 3000);
         }
-    } catch (err) {
-        console.error('Failed to get user info:', err);
-    }
-    
-    renderContacts();
-    const chatHeaderName = document.getElementById('chatHeaderName');
-    if (chatHeaderName) {
-        chatHeaderName.innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
-    }
-    const chatHeaderStatus = document.getElementById('chatHeaderStatus');
-    if (chatHeaderStatus) {
-        chatHeaderStatus.innerHTML = `Переписка с ${formatDisplayName(displayName)}`;
-    }
-    document.querySelector('.chat-main').style.display = 'flex';
-    loadMessages();
-    closeSidebar();
-}
+        
+        // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tab}TabBtn`).classList.add('active');
+            
+            if (tab === 'contacts') {
+                renderContactsPage();
+            }
+        }
         
         // ============ ЭКРАН ВХОДА ============
         function renderLogin() {
@@ -901,64 +859,86 @@ async function selectChat(username) {
             document.getElementById('doRegisterBtn').onclick = register;
         }
         
-        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА ============
-        function renderChat() {
+        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
+        function renderMainApp() {
             document.getElementById('app').innerHTML = `
-                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
-                <div class="overlay" onclick="closeSidebar()"></div>
-                
-                <div class="sidebar">
-                    <div class="sidebar-header">
-                        <h2>💬 Speak</h2>
+                <div class="app-container">
+                    <div class="header">
+                        <h1>🔒 Speak</h1>
                         <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
                     </div>
                     
-                    <div class="search-area">
-                        <input type="text" id="searchInput" placeholder="🔍 Поиск по @Отображаемое имя..." oninput="onSearchInput()">
-                        <div id="searchResults" class="search-results" style="display:none;"></div>
+                    <div class="content-area">
+                        <!-- Вкладка Контакты -->
+                        <div id="contactsTab" class="tab-content active">
+                            <div class="contacts-page">
+                                <div class="search-box">
+                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Отображаемое имя..." oninput="onSearchInput()">
+                                    <div id="searchResults" class="search-results" style="display:none;"></div>
+                                </div>
+                                <div id="contactsList" class="contacts-list"></div>
+                                <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
+                            </div>
+                        </div>
+                        
+                        <!-- Вкладка Чаты -->
+                        <div id="chatsTab" class="tab-content">
+                            <div class="chat-page">
+                                <div class="chat-header">
+                                    <h3 id="chatHeaderName">Выберите чат</h3>
+                                    <p id="chatHeaderStatus">Выберите собеседника из списка контактов</p>
+                                </div>
+                                <div class="messages-area" id="messagesArea">
+                                    <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
+                                </div>
+                                <div class="input-area">
+                                    <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off" disabled>
+                                    <button onclick="sendMessage()" disabled>→</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
-                    <div class="contacts-list" id="contactsList"></div>
-                    
-                    <div class="add-contact">
-                        <button onclick="addContact()">➕ Добавить контакт</button>
-                        <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
-                    </div>
-                </div>
-                
-                <div class="chat-main" style="display: none;">
-                    <div class="chat-header">
-                        <h3 id="chatHeaderName">Выберите чат</h3>
-                        <p id="chatHeaderStatus">Выберите собеседника из списка</p>
+                    <div class="bottom-tabs">
+                        <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
+                        <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
+                        <button class="tab" onclick="logout()">🚪 Выйти</button>
                     </div>
                     
-                    <div class="messages-area" id="messagesArea">
-                        <div class="empty-state">👈 Выберите чат слева</div>
-                    </div>
-                    
-                    <div class="input-area">
-                        <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
-                        <button onclick="sendMessage()">→</button>
-                    </div>
+                    <div id="status" class="status"></div>
                 </div>
             `;
             
-            renderContacts();
+            renderContactsPage();
             
-            setInterval(() => {
-                if (currentChat) loadMessages();
-            }, 3000);
+            // Если выбран чат, активируем поле ввода
+            if (currentChat) {
+                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(currentChat)}</span>`;
+                document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
+                const msgInput = document.getElementById('messageInput');
+                const sendBtn = document.querySelector('#chatsTab .input-area button');
+                if (msgInput) {
+                    msgInput.disabled = false;
+                    msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+                }
+                if (sendBtn) sendBtn.disabled = false;
+                loadMessages();
+                if (window.messageInterval) clearInterval(window.messageInterval);
+                window.messageInterval = setInterval(() => {
+                    if (currentChat) loadMessages();
+                }, 3000);
+            }
         }
         
         // ============ ЗАПУСК ============
         if (authToken && currentUser) {
-            renderChat();
+            renderMainApp();
         } else {
             renderLogin();
         }
         
-        window.toggleSidebar = toggleSidebar;
-        window.closeSidebar = closeSidebar;
+        window.toggleSidebar = function() {};
+        window.closeSidebar = function() {};
         window.register = register;
         window.login = login;
         window.logout = logout;
@@ -968,6 +948,7 @@ async function selectChat(username) {
         window.sendMessage = sendMessage;
         window.selectChat = selectChat;
         window.onSearchInput = onSearchInput;
+        window.switchTab = switchTab;
     </script>
 </body>
 </html>
