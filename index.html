@@ -312,14 +312,23 @@
             margin-top: 50px;
         }
         
-       /* Нижние вкладки */
-        .bottom-tabs {
-            display: flex;
-            background: #111111;
-            border-top: 1px solid #2c2c2e;
-            flex-shrink: 0;
-            margin-top: -6px;
-        }
+     /* Нижние вкладки */
+.bottom-tabs {
+    display: flex;
+    background: #111111;
+    border-top: 1px solid #2c2c2e;
+    flex-shrink: 0;
+    margin-bottom: env(safe-area-inset-bottom, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+    margin-top: -20px;
+}
+
+/* Для iPhone X, 11, 12, 13, 14, 15 с вырезом */
+@supports (padding: max(0px)) {
+    .bottom-tabs {
+        margin-top: -30px;
+    }
+}
         
         .tab {
             flex: 1;
