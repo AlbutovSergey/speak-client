@@ -2,12 +2,12 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
     <title>Speak — безопасный мессенджер</title>
     <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; overflow: hidden; }
         
         /* Сайдбар со списком контактов */
         .sidebar {
@@ -16,6 +16,7 @@
             border-right: 1px solid #2c2c2e;
             display: flex;
             flex-direction: column;
+            flex-shrink: 0;
         }
         
         .sidebar-header {
@@ -174,6 +175,7 @@
             padding: 20px;
             background: #1a1a1a;
             border-bottom: 1px solid #2c2c2e;
+            position: relative;
         }
         
         .chat-header h3 {
@@ -272,21 +274,6 @@
             margin-top: 50px;
         }
         
-        @media (max-width: 600px) {
-            .sidebar {
-                width: 80px;
-            }
-            .sidebar-header h2, .contact-info, .user-info, .search-area {
-                display: none;
-            }
-            .contact-item {
-                justify-content: center;
-            }
-            .contact-avatar {
-                margin-right: 0;
-            }
-        }
-        
         .status {
             color: #4cd964;
             font-size: 12px;
@@ -296,6 +283,90 @@
         
         .status.error {
             color: #ff3b30;
+        }
+        
+        /* Кнопка меню для мобильной версии */
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1001;
+            background: #007aff;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 14px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        /* Затемнение фона при открытом меню */
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 99;
+        }
+        
+        .overlay.active {
+            display: block;
+        }
+        
+        /* Мобильная версия */
+        @media (max-width: 768px) {
+            body {
+                position: relative;
+            }
+            
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 85%;
+                max-width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .chat-main {
+                width: 100%;
+            }
+            
+            .menu-toggle {
+                display: block;
+            }
+            
+            .chat-header {
+                padding-left: 60px;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+            
+            .chat-header h3 {
+                font-size: 16px;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .menu-toggle {
+                display: none;
+            }
         }
         
         /* Стили для экрана входа */
@@ -393,10 +464,27 @@
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         let searchTimeout = null;
         
-        // Функция для форматирования отображаемого имени (добавляет @)
         function formatDisplayName(name) {
             if (!name) return '';
             return name.startsWith('@') ? name : `@${name}`;
+        }
+        
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            if (sidebar) {
+                sidebar.classList.toggle('open');
+                if (overlay) overlay.classList.toggle('active');
+            }
+        }
+        
+        function closeSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.overlay');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+                if (overlay) overlay.classList.remove('active');
+            }
         }
         
         async function apiRequest(endpoint, method, body = null) {
@@ -415,10 +503,9 @@
             return response;
         }
         
-        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ПО ОТОБРАЖАЕМОМУ ИМЕНИ ============
+        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ============
         async function searchUsers(query) {
             if (!query || query.length < 2) return [];
-            // Убираем @ из запроса для поиска
             const cleanQuery = query.replace(/^@/, '');
             try {
                 const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(cleanQuery), 'GET');
@@ -456,7 +543,6 @@
                 contacts.push(username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 renderContacts();
-                // Очищаем поиск
                 document.getElementById('searchInput').value = '';
                 document.getElementById('searchResults').innerHTML = '';
                 document.getElementById('searchResults').style.display = 'none';
@@ -571,7 +657,7 @@
             location.reload();
         }
         
-        // ============ ДОБАВИТЬ КОНТАКТ (через кнопку) ============
+        // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContact() {
             const input = prompt('Введите @Отображаемое имя собеседника:');
             if (!input) return;
@@ -693,7 +779,6 @@
                 return;
             }
             
-            // Получаем отображаемые имена для контактов
             const contactsWithNames = await Promise.all(contacts.map(async (contact) => {
                 try {
                     const response = await apiRequest(`/api/user_info/${contact}`, 'GET');
@@ -720,7 +805,6 @@
         async function selectChat(username) {
             currentChat = username;
             
-            // Получаем отображаемое имя собеседника
             let displayName = username;
             try {
                 const response = await apiRequest(`/api/user_info/${username}`, 'GET');
@@ -733,6 +817,7 @@
             document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
             document.querySelector('.chat-main').style.display = 'flex';
             loadMessages();
+            closeSidebar();
         }
         
         // ============ ЭКРАН ВХОДА ============
@@ -787,6 +872,9 @@
         // ============ ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА ============
         function renderChat() {
             document.getElementById('app').innerHTML = `
+                <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+                <div class="overlay" onclick="closeSidebar()"></div>
+                
                 <div class="sidebar">
                     <div class="sidebar-header">
                         <h2>💬 Speak</h2>
@@ -837,7 +925,8 @@
             renderLogin();
         }
         
-        // Делаем функции глобальными
+        window.toggleSidebar = toggleSidebar;
+        window.closeSidebar = closeSidebar;
         window.register = register;
         window.login = login;
         window.logout = logout;
