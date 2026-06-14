@@ -6,114 +6,28 @@
     <title>Speak — безопасный мессенджер</title>
     <meta name="theme-color" content="#000000">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: #0a0a0a;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-        }
-        h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-        .sub {
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-        .login-area, .chat-area {
-            background: #1a1a1a;
-            padding: 30px;
-            border-radius: 20px;
-            margin-top: 20px;
-        }
-        input, button {
-            padding: 14px;
-            margin: 10px 0;
-            width: 100%;
-            border-radius: 12px;
-            border: none;
-            font-size: 16px;
-        }
-        input {
-            background: #2c2c2e;
-            color: white;
-        }
-        button {
-            background: #007aff;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #0055bb;
-        }
-        .switch-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        .switch-buttons button {
-            background: #2c2c2e;
-        }
-        .switch-buttons .active {
-            background: #007aff;
-        }
-        .message {
-            background: #2c2c2e;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 12px;
-            text-align: left;
-        }
-        .message.own {
-            background: #007aff;
-        }
-        .chat-messages {
-            max-height: 400px;
-            overflow-y: auto;
-            margin-bottom: 20px;
-        }
-        .status {
-            color: #4cd964;
-            font-size: 12px;
-            margin-top: 10px;
-        }
-        .status.error {
-            color: #ff3b30;
-        }
-        #logoutBtn {
-            background: #ff3b30;
-            margin-top: 10px;
-        }
-        #logoutBtn:hover {
-            background: #cc0000;
-        }
-        .flex-row {
-            display: flex;
-            gap: 10px;
-        }
-        .flex-row input {
-            flex: 1;
-        }
-        .flex-row button {
-            width: auto;
-            padding: 14px 24px;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .container { max-width: 500px; width: 100%; text-align: center; }
+        h1 { font-size: 32px; margin-bottom: 10px; }
+        .sub { color: #888; font-size: 14px; margin-bottom: 20px; }
+        .login-area, .chat-area { background: #1a1a1a; padding: 30px; border-radius: 20px; margin-top: 20px; }
+        input, button { padding: 14px; margin: 10px 0; width: 100%; border-radius: 12px; border: none; font-size: 16px; }
+        input { background: #2c2c2e; color: white; }
+        button { background: #007aff; color: white; font-weight: bold; cursor: pointer; }
+        button:hover { background: #0055bb; }
+        .switch-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .switch-buttons button { background: #2c2c2e; }
+        .switch-buttons .active { background: #007aff; }
+        .message { background: #2c2c2e; padding: 12px; margin: 8px 0; border-radius: 12px; text-align: left; }
+        .message.own { background: #007aff; }
+        .chat-messages { max-height: 400px; overflow-y: auto; margin-bottom: 20px; }
+        .status { color: #4cd964; font-size: 12px; margin-top: 10px; }
+        .status.error { color: #ff3b30; }
+        #logoutBtn { background: #ff3b30; margin-top: 10px; }
+        .flex-row { display: flex; gap: 10px; }
+        .flex-row input { flex: 1; }
+        .flex-row button { width: auto; padding: 14px 24px; }
     </style>
 </head>
 <body>
@@ -121,53 +35,99 @@
         <h1>🔒 Speak</h1>
         <div class="sub">Безопасный мессенджер</div>
         
-        <!-- Форма входа/регистрации -->
         <div id="loginArea" class="login-area">
             <div class="switch-buttons">
                 <button id="showLoginBtn" class="active">Вход</button>
                 <button id="showRegisterBtn">Регистрация</button>
             </div>
-            
             <div id="loginForm">
                 <input type="text" id="loginUsername" placeholder="Логин" autocomplete="off">
                 <input type="password" id="loginPassword" placeholder="Пароль">
                 <button id="doLoginBtn">Войти</button>
             </div>
-            
             <div id="registerForm" style="display:none;">
                 <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
                 <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" autocomplete="off">
                 <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                 <button id="doRegisterBtn">Зарегистрироваться</button>
             </div>
-            
             <div id="status" class="status"></div>
         </div>
         
-        <!-- Чат -->
         <div id="chatArea" class="chat-area" style="display:none;">
-            <div id="chatMessages" class="chat-messages">
-                <div style="text-align:center; color:#888; padding:20px;">Загрузка сообщений...</div>
-            </div>
+            <div id="chatMessages" class="chat-messages">Загрузка...</div>
             <div class="flex-row">
-                <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
+                <input type="text" id="messageInput" placeholder="Сообщение...">
                 <button id="sendBtn">→</button>
             </div>
             <button id="logoutBtn">Выйти</button>
         </div>
     </div>
     
+    <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/libsodium-wrappers.min.js"></script>
+    
     <script>
         // ============ НАСТРОЙКИ ============
-        // Адрес бэкенда на Cloudflare Workers
-       // const API_URL = 'https://speak-backend.albutovsergey.workers.dev';
         const API_URL = 'https://speak-backend-b43k.onrender.com';
+        
         // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
+        let sodium = null;
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
-        let currentDisplayName = localStorage.getItem('speak_displayName');
+        let currentUserId = localStorage.getItem('speak_userId');
+        let privateKey = localStorage.getItem('speak_privateKey');
+        let signaturePrivateKey = localStorage.getItem('speak_signaturePrivateKey');
         
-        // ============ ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ============
+        // ============ ИНИЦИАЛИЗАЦИЯ КРИПТОГРАФИИ ============
+        async function initSodium() {
+            if (!window.sodium) {
+                setTimeout(initSodium, 100);
+                return;
+            }
+            await window.sodium.ready;
+            sodium = window.sodium;
+            console.log('[Speak] Sodium initialized');
+        }
+        
+        // Генерация ключей при регистрации
+        async function generateKeys() {
+            const keypair = sodium.crypto_box_keypair();
+            const publicKey = sodium.to_base64(keypair.publicKey);
+            const privateKeyBase64 = sodium.to_base64(keypair.privateKey);
+            const signKeypair = sodium.crypto_sign_keypair();
+            const signPublicKey = sodium.to_base64(signKeypair.publicKey);
+            const signPrivateKey = sodium.to_base64(signKeypair.privateKey);
+            return { publicKey, privateKey: privateKeyBase64, signPublicKey, signPrivateKey };
+        }
+        
+        // Шифрование сообщения для получателя
+        async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
+            const recipientPub = sodium.from_base64(recipientPublicKey);
+            const senderPriv = sodium.from_base64(senderPrivateKey);
+            const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+            const encrypted = sodium.crypto_box_easy(
+                sodium.from_string(message),
+                nonce,
+                recipientPub,
+                senderPriv
+            );
+            return { payload: sodium.to_base64(encrypted), nonce: sodium.to_base64(nonce) };
+        }
+        
+        // Расшифровка сообщения
+        async function decryptMessage(encryptedPayload, nonce, senderPublicKey, recipientPrivateKey) {
+            const senderPub = sodium.from_base64(senderPublicKey);
+            const recipientPriv = sodium.from_base64(recipientPrivateKey);
+            const decrypted = sodium.crypto_box_open_easy(
+                sodium.from_base64(encryptedPayload),
+                sodium.from_base64(nonce),
+                senderPub,
+                recipientPriv
+            );
+            return sodium.to_string(decrypted);
+        }
+        
+        // ============ ФУНКЦИИ СТАТУСА ============
         function showStatus(msg, isError = false) {
             const statusDiv = document.getElementById('status');
             statusDiv.textContent = msg;
@@ -179,16 +139,11 @@
         
         // ============ API ЗАПРОСЫ ============
         async function apiRequest(endpoint, method, body = null) {
-            const headers = {
-                'Content-Type': 'application/json'
-            };
-            if (authToken) {
-                headers['Authorization'] = `Bearer ${authToken}`;
-            }
+            const headers = { 'Content-Type': 'application/json' };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
             
             const response = await fetch(`${API_URL}${endpoint}`, {
-                method,
-                headers,
+                method, headers,
                 body: body ? JSON.stringify(body) : undefined
             });
             
@@ -199,44 +154,41 @@
             return response;
         }
         
-        // ============ АВТОРИЗАЦИЯ ============
+        // ============ РЕГИСТРАЦИЯ (с генерацией ключей) ============
         async function register() {
             const displayName = document.getElementById('regDisplayName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             
-            if (!displayName) {
-                showStatus('Введите отображаемое имя', true);
-                return;
-            }
-            if (username.length < 3) {
-                showStatus('Логин должен быть не менее 3 символов', true);
-                return;
-            }
-            if (password.length < 6) {
-                showStatus('Пароль должен быть не менее 6 символов', true);
-                return;
-            }
+            if (!displayName) { showStatus('Введите отображаемое имя', true); return; }
+            if (username.length < 3) { showStatus('Логин должен быть не менее 3 символов', true); return; }
+            if (password.length < 6) { showStatus('Пароль должен быть не менее 6 символов', true); return; }
             
             try {
                 showStatus('Регистрация...');
+                const keys = await generateKeys();
+                
                 const response = await apiRequest('/api/register', 'POST', {
-                    username,
-                    password,
-                    displayName,
-                    publicKey: 'temp-key-' + Date.now(),
-                    signaturePublicKey: 'temp-sig-key',
-                    signaturePrivateKey: 'temp-priv-key'
+                    username, password, displayName,
+                    publicKey: keys.publicKey,
+                    signaturePublicKey: keys.signPublicKey,
+                    signaturePrivateKey: keys.signPrivateKey
                 });
                 const data = await response.json();
                 
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentDisplayName = data.displayName;
+                    currentUserId = data.userId;
+                    privateKey = keys.privateKey;
+                    signaturePrivateKey = keys.signPrivateKey;
+                    
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_displayName', currentDisplayName);
+                    localStorage.setItem('speak_userId', currentUserId);
+                    localStorage.setItem('speak_privateKey', privateKey);
+                    localStorage.setItem('speak_signaturePrivateKey', signaturePrivateKey);
+                    
                     showStatus('Регистрация успешна!');
                     showChat();
                 } else {
@@ -248,6 +200,7 @@
             }
         }
         
+        // ============ ВХОД ============
         async function login() {
             const username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
@@ -265,10 +218,14 @@
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentDisplayName = data.display_name || username;
+                    currentUserId = data.userId;
+                    privateKey = data.signature_private_key;
+                    
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_displayName', currentDisplayName);
+                    localStorage.setItem('speak_userId', currentUserId);
+                    localStorage.setItem('speak_privateKey', privateKey);
+                    
                     showStatus('Вход выполнен!');
                     showChat();
                 } else {
@@ -280,59 +237,30 @@
             }
         }
         
+        // ============ ВЫХОД ============
         async function logout() {
             if (authToken) {
-                try {
-                    await apiRequest('/api/logout', 'POST');
-                } catch(e) {}
+                try { await apiRequest('/api/logout', 'POST'); } catch(e) {}
             }
             authToken = null;
             currentUser = null;
-            currentDisplayName = null;
-            localStorage.removeItem('speak_token');
-            localStorage.removeItem('speak_username');
-            localStorage.removeItem('speak_displayName');
+            currentUserId = null;
+            privateKey = null;
+            localStorage.clear();
             document.getElementById('chatArea').style.display = 'none';
             document.getElementById('loginArea').style.display = 'block';
-            document.getElementById('loginUsername').value = '';
-            document.getElementById('loginPassword').value = '';
-            document.getElementById('regDisplayName').value = '';
-            document.getElementById('regUsername').value = '';
-            document.getElementById('regPassword').value = '';
-            showStatus('Вы вышли из системы');
+            showStatus('Вы вышли');
         }
         
-        // ============ ЧАТ ============
+        // ============ ПОКАЗАТЬ ЧАТ ============
         function showChat() {
             document.getElementById('loginArea').style.display = 'none';
             document.getElementById('chatArea').style.display = 'block';
             loadMessages();
+            setInterval(loadMessages, 5000);
         }
         
-        async function loadMessages() {
-            if (!authToken) return;
-            try {
-                const response = await apiRequest('/api/messages', 'GET');
-                const messages = await response.json();
-                const chatDiv = document.getElementById('chatMessages');
-                
-                if (!messages || messages.length === 0) {
-                    chatDiv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">💬 Нет сообщений</div>';
-                } else {
-                    chatDiv.innerHTML = messages.map(msg => `
-                        <div class="message ${msg.sender_username === currentUser ? 'own' : ''}">
-                            <strong>${msg.sender_display_name || msg.sender_username}:</strong><br>
-                            ${msg.encrypted_payload || '[сообщение]'}
-                            <div style="font-size: 10px; color:#666; margin-top: 5px;">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
-                        </div>
-                    `).join('');
-                    chatDiv.scrollTop = chatDiv.scrollHeight;
-                }
-            } catch (err) {
-                console.error('Load messages error:', err);
-            }
-        }
-        
+        // ============ ОТПРАВКА СООБЩЕНИЯ (С ШИФРОВАНИЕМ) ============
         async function sendMessage() {
             const input = document.getElementById('messageInput');
             const text = input.value.trim();
@@ -342,18 +270,91 @@
             if (!recipient) return;
             
             try {
-                showStatus('Отправка...');
+                // 1. Получаем публичный ключ получателя
+                const keyResponse = await apiRequest(`/api/public_key/${recipient}`, 'GET');
+                const recipientData = await keyResponse.json();
+                
+                if (!recipientData.public_key) {
+                    showStatus('Не удалось получить ключ получателя', true);
+                    return;
+                }
+                
+                // 2. Шифруем сообщение
+                const encrypted = await encryptMessage(text, recipientData.public_key, privateKey);
+                
+                // 3. Отправляем зашифрованное сообщение
                 await apiRequest('/api/send_message', 'POST', {
                     recipientUsername: recipient,
-                    encryptedPayload: text,
-                    nonce: 'temp-nonce-' + Date.now()
+                    encryptedPayload: encrypted.payload,
+                    nonce: encrypted.nonce
                 });
+                
                 input.value = '';
                 showStatus('Сообщение отправлено!');
                 await loadMessages();
             } catch (err) {
                 console.error('Send error:', err);
                 showStatus('Ошибка отправки: ' + err.message, true);
+            }
+        }
+        
+        // ============ ЗАГРУЗКА СООБЩЕНИЙ (С РАСШИФРОВКОЙ) ============
+        async function loadMessages() {
+            if (!authToken) return;
+            try {
+                const response = await apiRequest('/api/messages', 'GET');
+                const messages = await response.json();
+                const chatDiv = document.getElementById('chatMessages');
+                
+                if (!messages || messages.length === 0) {
+                    chatDiv.innerHTML = '<div style="text-align:center; color:#888; padding:20px;">💬 Нет сообщений</div>';
+                    return;
+                }
+                
+                // Расшифровываем каждое сообщение
+                const decryptedMessages = [];
+                for (const msg of messages) {
+                    try {
+                        // Получаем публичный ключ отправителя
+                        const keyResponse = await apiRequest(`/api/public_key/${msg.sender_username}`, 'GET');
+                        const senderData = await keyResponse.json();
+                        
+                        // Расшифровываем
+                        const decryptedText = await decryptMessage(
+                            msg.encrypted_payload,
+                            msg.nonce,
+                            senderData.public_key,
+                            privateKey
+                        );
+                        
+                        decryptedMessages.push({
+                            text: decryptedText,
+                            sender: msg.sender_username,
+                            displayName: msg.sender_display_name || msg.sender_username,
+                            isOwn: msg.sender_username === currentUser
+                        });
+                    } catch (e) {
+                        console.error('Decryption error:', e);
+                        decryptedMessages.push({
+                            text: '🔒 Зашифрованное сообщение (ошибка расшифровки)',
+                            sender: msg.sender_username,
+                            displayName: msg.sender_display_name || msg.sender_username,
+                            isOwn: msg.sender_username === currentUser
+                        });
+                    }
+                }
+                
+                // Отображаем расшифрованные сообщения
+                chatDiv.innerHTML = decryptedMessages.map(msg => `
+                    <div class="message ${msg.isOwn ? 'own' : ''}">
+                        <strong>${msg.isOwn ? 'Вы' : msg.displayName}:</strong><br>
+                        ${msg.text}
+                    </div>
+                `).join('');
+                chatDiv.scrollTop = chatDiv.scrollHeight;
+                
+            } catch (err) {
+                console.error('Load messages error:', err);
             }
         }
         
@@ -377,55 +378,19 @@
         document.getElementById('sendBtn').onclick = sendMessage;
         document.getElementById('logoutBtn').onclick = logout;
         
-        // Обработка Enter в полях ввода
-        document.getElementById('loginPassword').onkeypress = (e) => {
-            if (e.key === 'Enter') login();
-        };
-        document.getElementById('regPassword').onkeypress = (e) => {
-            if (e.key === 'Enter') register();
-        };
-        document.getElementById('messageInput').onkeypress = (e) => {
-            if (e.key === 'Enter') sendMessage();
-        };
+        document.getElementById('loginPassword').onkeypress = (e) => { if (e.key === 'Enter') login(); };
+        document.getElementById('regPassword').onkeypress = (e) => { if (e.key === 'Enter') register(); };
+        document.getElementById('messageInput').onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
         
-        // Автовход при загрузке
-        if (authToken && currentUser) {
-            showChat();
-            // Обновляем сообщения каждые 5 секунд
-            setInterval(loadMessages, 5000);
+        // ============ ЗАПУСК ============
+        async function start() {
+            await initSodium();
+            if (authToken && currentUser) {
+                showChat();
+            }
         }
-        let sodium = null;
-
-async function initSodium() {
-    await window.sodium.ready;
-    sodium = window.sodium;
-}
-
-async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
-    const recipientPub = sodium.from_base64(recipientPublicKey);
-    const senderPriv = sodium.from_base64(senderPrivateKey);
-    const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
-    const encrypted = sodium.crypto_box_easy(
-        sodium.from_string(message),
-        nonce,
-        recipientPub,
-        senderPriv
-    );
-    return { payload: sodium.to_base64(encrypted), nonce: sodium.to_base64(nonce) };
-}
-
-async function decryptMessage(encryptedPayload, nonce, senderPublicKey, recipientPrivateKey) {
-    const senderPub = sodium.from_base64(senderPublicKey);
-    const recipientPriv = sodium.from_base64(recipientPrivateKey);
-    const decrypted = sodium.crypto_box_open_easy(
-        sodium.from_base64(encryptedPayload),
-        sodium.from_base64(nonce),
-        senderPub,
-        recipientPriv
-    );
-    return sodium.to_string(decrypted);
-}
+        
+        start();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/libsodium-wrappers.min.js"></script>
 </body>
 </html>
