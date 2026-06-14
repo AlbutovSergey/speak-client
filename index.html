@@ -958,78 +958,77 @@
         }
         
         // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
-        function renderMainApp() {
-            document.getElementById('app').innerHTML = `
-                <div class="app-container">
-                    <div class="header">
-                        <div class="header-top">
-                            <h1>🔒 Speak</h1>
-                            <div class="sound-buttons">
-                                <button onclick="enableSound()">🔔 Вкл</button>
-                                <button onclick="disableSound()">🔕 Выкл</button>
-                            </div>
-                        </div>
-                        <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
+function renderMainApp() {
+    document.getElementById('app').innerHTML = `
+        <div class="app-container">
+            <div class="header">
+                <div class="header-top">
+                    <h1>🔒 Speak</h1>
+                    <div class="sound-buttons">
+                        <button onclick="enableSound()">🔔 Вкл</button>
+                        <button onclick="disableSound()">🔕 Выкл</button>
                     </div>
-                    
-                    <div class="content-area">
-                        <div id="contactsTab" class="tab-content active">
-                            <div class="contacts-page">
-                                <div class="search-box">
-                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Псевдоним..." oninput="onSearchInput()">
-                                    <div id="searchResults" class="search-results" style="display:none;"></div>
-                                </div>
-                                <div id="contactsList" class="contacts-list"></div>
-                                <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
-                            </div>
-                        </div>
-                        
-                        <div id="chatsTab" class="tab-content">
-                            <div class="chat-page">
-                                <div class="chat-header">
-                                    <h3 id="chatHeaderName">Выберите чат</h3>
-                                </div>
-                                <div class="messages-area" id="messagesArea">
-                                    <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
-                                </div>
-                                <div class="input-area">
-                                    <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
-                                    <button onclick="sendMessage()" disabled>→</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bottom-tabs">
-                        <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
-                        <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
-                        <button class="tab" onclick="logout()">🚪 Выйти</button>
-                    </div>
-                    
-                    <div id="status" class="status"></div>
                 </div>
-            `;
+                <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
+            </div>
             
-            renderContactsPage();
+            <div class="content-area">
+                <div id="contactsTab" class="tab-content active">
+                    <div class="contacts-page">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="🔍 Поиск..." oninput="onSearchInput()">
+                            <div id="searchResults" class="search-results" style="display:none;"></div>
+                        </div>
+                        <div id="contactsList" class="contacts-list"></div>
+                        <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
+                    </div>
+                </div>
+                
+                <div id="chatsTab" class="tab-content">
+                    <div class="chat-page">
+                        <div class="chat-header">
+                            <h3 id="chatHeaderName">Выберите чат</h3>
+                        </div>
+                        <div class="messages-area" id="messagesArea">
+                            <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
+                        </div>
+                        <div class="input-area">
+                            <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
+                            <button onclick="sendMessage()" disabled>→</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            if (currentChat) {
-                const msgInput = document.getElementById('messageInput');
-                const sendBtn = document.querySelector('#chatsTab .input-area button');
-                if (msgInput) {
-                    msgInput.disabled = false;
-                    msgInput.placeholder = "Сообщение...";
-                    msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-                }
-                if (sendBtn) sendBtn.disabled = false;
-                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(currentNickname || currentChat)}</span>`;
-                loadMessages();
-                if (window.messageInterval) clearInterval(window.messageInterval);
-                window.messageInterval = setInterval(async () => {
-                    if (currentChat) await loadMessages();
-                }, 3000);
-            }
+            <div class="bottom-tabs">
+                <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
+                <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
+                <button class="tab" onclick="logout()">🚪 Выйти</button>
+            </div>
+            
+            <div id="status" class="status"></div>
+        </div>
+    `;
+    
+    renderContactsPage();
+    
+    if (currentChat) {
+        const msgInput = document.getElementById('messageInput');
+        const sendBtn = document.querySelector('#chatsTab .input-area button');
+        if (msgInput) {
+            msgInput.disabled = false;
+            msgInput.placeholder = "Сообщение...";
+            msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
         }
-        
+        if (sendBtn) sendBtn.disabled = false;
+        document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(currentNickname || currentChat)}</span>`;
+        loadMessages();
+        if (window.messageInterval) clearInterval(window.messageInterval);
+        window.messageInterval = setInterval(async () => {
+            if (currentChat) await loadMessages();
+        }, 3000);
+    }
+}
         // ============ ЗАПУСК ============
         document.body.addEventListener('click', () => {
             if (audioContext && audioContext.state === 'suspended') {
