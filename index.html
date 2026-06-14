@@ -35,6 +35,10 @@
             word-break: break-all;
         }
         
+        .user-info span {
+            color: #007aff;
+        }
+        
         .contacts-list {
             flex: 1;
             overflow-y: auto;
@@ -120,6 +124,10 @@
             margin-bottom: 4px;
         }
         
+        .chat-header h3 span {
+            color: #007aff;
+        }
+        
         .chat-header p {
             font-size: 12px;
             color: #888;
@@ -187,6 +195,10 @@
             outline: none;
         }
         
+        .input-area input::placeholder {
+            color: #666;
+        }
+        
         .input-area button {
             padding: 12px 24px;
             background: #007aff;
@@ -222,6 +234,16 @@
                 margin-right: 0;
             }
         }
+        
+        .status {
+            color: #4cd964;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .status.error {
+            color: #ff3b30;
+        }
     </style>
 </head>
 <body>
@@ -238,7 +260,15 @@
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         
-        // ============ ФУНКЦИИ ============
+        // Функция для отображения имени с @
+        function formatUsername(username) {
+            return username ? `@${username}` : '';
+        }
+        
+        function formatDisplayName(username) {
+            return username || 'Пользователь';
+        }
+        
         function showStatus(msg, isError = false) {
             const statusDiv = document.getElementById('status');
             if (statusDiv) {
@@ -339,16 +369,31 @@
         
         // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContact() {
-            const username = prompt('Введите логин собеседника:');
+            const username = prompt('Введите логин собеседника (без @):');
             if (!username || username === currentUser) return;
             
-            if (!contacts.includes(username)) {
-                contacts.push(username);
+            const cleanUsername = username.replace(/^@/, ''); // убираем @ если ввели
+            if (!contacts.includes(cleanUsername)) {
+                contacts.push(cleanUsername);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 renderContacts();
-                showStatus(`Контакт ${username} добавлен`);
+                showStatus(`Контакт ${formatUsername(cleanUsername)} добавлен`);
             } else {
-                showStatus('Этот контакт уже есть', true);
+                showStatus(`Контакт ${formatUsername(cleanUsername)} уже есть`, true);
+            }
+        }
+        
+        // ============ УДАЛИТЬ КОНТАКТ ============
+        function removeContact(username) {
+            if (confirm(`Удалить контакт ${formatUsername(username)}?`)) {
+                contacts = contacts.filter(c => c !== username);
+                localStorage.setItem('speak_contacts', JSON.stringify(contacts));
+                if (currentChat === username) {
+                    currentChat = null;
+                    document.querySelector('.chat-main').style.display = 'none';
+                }
+                renderContacts();
+                showStatus(`Контакт ${formatUsername(username)} удалён`);
             }
         }
         
@@ -371,7 +416,7 @@
             }
         }
         
-        // ============ ЗАГРУЗКА СООБЩЕНИЙ ДЛЯ ТЕКУЩЕГО ЧАТА ============
+        // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
         async function loadMessages() {
             if (!authToken || !currentChat) return;
             
@@ -379,10 +424,9 @@
                 const response = await apiRequest('/api/messages', 'GET');
                 const allMessages = await response.json();
                 
-                // Фильтруем сообщения для текущего собеседника
                 const chatMessages = allMessages.filter(msg => 
                     msg.sender_username === currentChat || 
-                    (msg.sender_username === currentUser && msg.recipient_username === currentChat)
+                    msg.sender_username === currentUser
                 );
                 
                 const messagesDiv = document.getElementById('messagesArea');
@@ -391,6 +435,7 @@
                 } else {
                     messagesDiv.innerHTML = chatMessages.map(msg => `
                         <div class="message ${msg.sender_username === currentUser ? 'own' : 'other'}">
+                            <div class="message-sender">${msg.sender_username === currentUser ? 'Вы' : formatUsername(msg.sender_username)}</div>
                             <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
                             <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
                         </div>
@@ -417,8 +462,9 @@
                     <div class="contact-avatar">👤</div>
                     <div class="contact-info">
                         <div class="contact-name">${contact}</div>
-                        <div class="contact-username">@${contact}</div>
+                        <div class="contact-username">${formatUsername(contact)}</div>
                     </div>
+                    <div style="cursor:pointer; opacity:0.5; margin-left:auto;" onclick="event.stopPropagation(); removeContact('${contact}')">🗑️</div>
                 </div>
             `).join('');
         }
@@ -427,12 +473,10 @@
         function selectChat(username) {
             currentChat = username;
             renderContacts();
-            document.getElementById('chatHeaderName').textContent = username;
-            document.getElementById('chatHeaderStatus').textContent = 'online';
-            loadMessages();
-            
-            // Показываем область чата, скрываем приветствие
+            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatUsername(username)}</span>`;
+            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${formatUsername(username)}`;
             document.querySelector('.chat-main').style.display = 'flex';
+            loadMessages();
         }
         
         // ============ ИНТЕРФЕЙС ВХОДА ============
@@ -483,7 +527,7 @@
                 <div class="sidebar">
                     <div class="sidebar-header">
                         <h2>💬 Speak</h2>
-                        <div class="user-info">${currentUser}</div>
+                        <div class="user-info">Вы: <span>${formatUsername(currentUser)}</span></div>
                     </div>
                     
                     <div class="contacts-list" id="contactsList"></div>
@@ -513,7 +557,6 @@
             
             renderContacts();
             
-            // Автоматическое обновление сообщений
             setInterval(() => {
                 if (currentChat) loadMessages();
             }, 3000);
@@ -531,6 +574,7 @@
         window.login = login;
         window.logout = logout;
         window.addContact = addContact;
+        window.removeContact = removeContact;
         window.sendMessage = sendMessage;
         window.selectChat = selectChat;
         window.showLoginForm = showLoginForm;
