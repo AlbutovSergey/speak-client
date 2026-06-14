@@ -420,12 +420,10 @@
             if (!soundEnabled) return;
             
             try {
-                // Создаём звук через Web Audio API
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
                 
-                // Включаем звуковой контекст после взаимодействия пользователя
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -436,8 +434,8 @@
                 oscillator.connect(gainNode);
                 gainNode.connect(audioContext.destination);
                 
-                oscillator.frequency.value = 880; // Нота Ля (A5)
-                gainNode.gain.value = 0.3; // Громкость 30%
+                oscillator.frequency.value = 880;
+                gainNode.gain.value = 0.3;
                 
                 oscillator.start();
                 gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
@@ -517,10 +515,10 @@
             }
             
             resultsDiv.innerHTML = results.map(user => `
-                <div class="search-result-item" onclick="addContactByUsername('${user.username}', '${user.nickname}')">
+                <div class="search-result-item" onclick="addContactByUsername('${user.username}', '${user.display_name}')">
                     <div class="search-result-avatar">👤</div>
                     <div class="search-result-info">
-                        <div class="search-result-name">${formatNickname(user.nickname || user.username)}</div>
+                        <div class="search-result-name">${formatNickname(user.display_name || user.username)}</div>
                         <div class="search-result-username">${user.username}</div>
                     </div>
                 </div>
@@ -720,7 +718,7 @@
                     nonce: 'temp-nonce'
                 });
                 input.value = '';
-                loadMessages();
+                await loadMessages();
             } catch (err) {
                 showStatus('Ошибка отправки', true);
             }
@@ -734,12 +732,13 @@
                 const response = await apiRequest('/api/messages', 'GET');
                 const allMessages = await response.json();
                 
+                // Фильтруем сообщения между текущим пользователем и выбранным чатом
                 const chatMessages = allMessages.filter(msg => 
-                    msg.sender_username === currentChat || 
-                    msg.sender_username === currentUser
+                    (msg.sender_username === currentUser && msg.recipient_username === currentChat) ||
+                    (msg.sender_username === currentChat && msg.recipient_username === currentUser)
                 );
                 
-                // Проверяем, есть ли новые сообщения (не от себя)
+                // Проверяем новые сообщения (не от себя)
                 if (messageLoadCount > 0 && chatMessages.length > messageLoadCount) {
                     const newMessages = chatMessages.slice(messageLoadCount);
                     const hasNewFromOther = newMessages.some(msg => msg.sender_username !== currentUser);
@@ -750,6 +749,8 @@
                 messageLoadCount = chatMessages.length;
                 
                 const messagesDiv = document.getElementById('messagesArea');
+                if (!messagesDiv) return;
+                
                 if (chatMessages.length === 0) {
                     messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
                 } else {
@@ -809,57 +810,54 @@
         }
         
         // ============ ВЫБОР ЧАТА ============
-        async function selectChat(username) {
-            currentChat = username;
-            localStorage.setItem('speak_current_chat', username);
-            currentTab = 'chats';
-            
-            // Сбрасываем счётчик сообщений
-            messageLoadCount = 0;
-            
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById('chatsTab').classList.add('active');
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.getElementById('chatsTabBtn').classList.add('active');
-            
-            let nickname = username;
-            try {
-                const token = localStorage.getItem('speak_token');
-                const response = await fetch(`${API_URL}/api/user_info/${username}`, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (response.ok) {
-                    const userInfo = await response.json();
-                    nickname = userInfo.display_name || username;
-                }
-            } catch (err) {
-                console.error('Failed to get user info:', err);
+async function selectChat(username) {
+    currentChat = username;
+    localStorage.setItem('speak_current_chat', username);
+    currentTab = 'chats';
+    
+    messageLoadCount = 0;
+    
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('chatsTab').classList.add('active');
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.getElementById('chatsTabBtn').classList.add('active');
+    
+    let nickname = username;
+    try {
+        const token = localStorage.getItem('speak_token');
+        const response = await fetch(`${API_URL}/api/user_info/${username}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             }
-            
-            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(nickname)}</span>`;
-            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
-            
-            const msgInput = document.getElementById('messageInput');
-            const sendBtn = document.querySelector('#chatsTab .input-area button');
-            if (msgInput) {
-                msgInput.disabled = false;
-                msgInput.placeholder = "Сообщение...";
-                msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-            }
-            if (sendBtn) sendBtn.disabled = false;
-            
-            await loadMessages();
-            
-            if (window.messageInterval) clearInterval(window.messageInterval);
-            window.messageInterval = setInterval(async () => {
-                if (currentChat) await loadMessages();
-            }, 3000);
+        });
+        if (response.ok) {
+            const userInfo = await response.json();
+            nickname = userInfo.display_name || username;
         }
-        
+    } catch (err) {
+        console.error('Failed to get user info:', err);
+    }
+    
+    document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(nickname)}</span>`;
+    
+    const msgInput = document.getElementById('messageInput');
+    const sendBtn = document.querySelector('#chatsTab .input-area button');
+    if (msgInput) {
+        msgInput.disabled = false;
+        msgInput.placeholder = "Сообщение...";
+        msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+    }
+    if (sendBtn) sendBtn.disabled = false;
+    
+    await loadMessages();
+    
+    if (window.messageInterval) clearInterval(window.messageInterval);
+    window.messageInterval = setInterval(async () => {
+        if (currentChat) await loadMessages();
+    }, 3000);
+}
         // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
         function switchTab(tab) {
             currentTab = tab;
@@ -944,83 +942,79 @@
             document.getElementById('doRegisterBtn').onclick = register;
         }
         
-        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
-        function renderMainApp() {
-            document.getElementById('app').innerHTML = `
-                <div class="app-container">
-                    <div class="header">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <h1>🔒 Speak</h1>
-                            <div style="display: flex; gap: 8px;">
-                                <button onclick="enableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔔 Вкл</button>
-                                <button onclick="disableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔕 Выкл</button>
-                            </div>
-                        </div>
-                        <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
+// ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
+function renderMainApp() {
+    document.getElementById('app').innerHTML = `
+        <div class="app-container">
+            <div class="header">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h1>🔒 Speak</h1>
+                    <div style="display: flex; gap: 8px;">
+                        <button onclick="enableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔔 Вкл</button>
+                        <button onclick="disableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔕 Выкл</button>
                     </div>
-                    
-                    <div class="content-area">
-                        <div id="contactsTab" class="tab-content active">
-                            <div class="contacts-page">
-                                <div class="search-box">
-                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Псевдоним..." oninput="onSearchInput()">
-                                    <div id="searchResults" class="search-results" style="display:none;"></div>
-                                </div>
-                                <div id="contactsList" class="contacts-list"></div>
-                                <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
-                            </div>
-                        </div>
-                        
-                        <div id="chatsTab" class="tab-content">
-                            <div class="chat-page">
-                                <div class="chat-header">
-                                    <h3 id="chatHeaderName">Выберите чат</h3>
-                                    <p id="chatHeaderStatus">Выберите собеседника из списка контактов</p>
-                                </div>
-                                <div class="messages-area" id="messagesArea">
-                                    <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
-                                </div>
-                                <div class="input-area">
-                                    <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
-                                    <button onclick="sendMessage()" disabled>→</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="bottom-tabs">
-                        <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
-                        <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
-                        <button class="tab" onclick="logout()">🚪 Выйти</button>
-                    </div>
-                    
-                    <div id="status" class="status"></div>
                 </div>
-            `;
+                <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
+            </div>
             
-            renderContactsPage();
+            <div class="content-area">
+                <div id="contactsTab" class="tab-content active">
+                    <div class="contacts-page">
+                        <div class="search-box">
+                            <input type="text" id="searchInput" placeholder="🔍 Поиск по @Псевдоним..." oninput="onSearchInput()">
+                            <div id="searchResults" class="search-results" style="display:none;"></div>
+                        </div>
+                        <div id="contactsList" class="contacts-list"></div>
+                        <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
+                    </div>
+                </div>
+                
+                <div id="chatsTab" class="tab-content">
+                    <div class="chat-page">
+                        <div class="chat-header">
+                            <h3 id="chatHeaderName">Выберите чат</h3>
+                        </div>
+                        <div class="messages-area" id="messagesArea">
+                            <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
+                        </div>
+                        <div class="input-area">
+                            <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
+                            <button onclick="sendMessage()" disabled>→</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
-            if (currentChat) {
-                const msgInput = document.getElementById('messageInput');
-                const sendBtn = document.querySelector('#chatsTab .input-area button');
-                if (msgInput) {
-                    msgInput.disabled = false;
-                    msgInput.placeholder = "Сообщение...";
-                    msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-                }
-                if (sendBtn) sendBtn.disabled = false;
-                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(currentNickname || currentChat)}</span>`;
-                document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
-                loadMessages();
-                if (window.messageInterval) clearInterval(window.messageInterval);
-                window.messageInterval = setInterval(async () => {
-                    if (currentChat) await loadMessages();
-                }, 3000);
-            }
+            <div class="bottom-tabs">
+                <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
+                <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
+                <button class="tab" onclick="logout()">🚪 Выйти</button>
+            </div>
+            
+            <div id="status" class="status"></div>
+        </div>
+    `;
+    
+    renderContactsPage();
+    
+    if (currentChat) {
+        const msgInput = document.getElementById('messageInput');
+        const sendBtn = document.querySelector('#chatsTab .input-area button');
+        if (msgInput) {
+            msgInput.disabled = false;
+            msgInput.placeholder = "Сообщение...";
+            msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
         }
-        
+        if (sendBtn) sendBtn.disabled = false;
+        document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(currentNickname || currentChat)}</span>`;
+        loadMessages();
+        if (window.messageInterval) clearInterval(window.messageInterval);
+        window.messageInterval = setInterval(async () => {
+            if (currentChat) await loadMessages();
+        }, 3000);
+    }
+}
         // ============ ЗАПУСК ============
-        // Включаем звук после первого взаимодействия с пользователем
         document.body.addEventListener('click', () => {
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
