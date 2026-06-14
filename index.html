@@ -281,7 +281,7 @@
             display: flex;
             gap: 10px;
             flex-shrink: 0;
-            margin-bottom: -30px;
+            margin-bottom: -50px;
             position: relative;
             bottom: 10px;
         }
@@ -317,23 +317,23 @@
             margin-top: 50px;
         }
         
-     /* Нижние вкладки */
-.bottom-tabs {
-    display: flex;
-    background: #111111;
-    border-top: 1px solid #2c2c2e;
-    flex-shrink: 0;
-    margin-bottom: env(safe-area-inset-bottom, 0);
-    padding-bottom: env(safe-area-inset-bottom, 0);
-    margin-top: -40px;
-}
-
-/* Для iPhone X, 11, 12, 13, 14, 15 с вырезом */
-@supports (padding: max(0px)) {
-    .bottom-tabs {
-        margin-top: -30px;
-    }
-}
+             /* Нижние вкладки */
+        .bottom-tabs {
+            display: flex;
+            background: #111111;
+            border-top: 1px solid #2c2c2e;
+            flex-shrink: 0;
+            margin-bottom: env(safe-area-inset-bottom, 0);
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            margin-top: -40px;
+        }
+        
+        /* Для iPhone X, 11, 12, 13, 14, 15 с вырезом */
+        @supports (padding: max(0px)) {
+        .bottom-tabs {
+                margin-top: -40px;
+            }
+        }
         
         .tab {
             flex: 1;
