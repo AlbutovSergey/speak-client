@@ -25,23 +25,46 @@
         
         /* Шапка */
         .header {
-            padding: 16px 20px;
+            padding: 12px 20px;
             background: #1a1a1a;
             border-bottom: 1px solid #2c2c2e;
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
-        .header h1 {
+        .header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 20px;
-            margin-bottom: 4px;
+            cursor: pointer;
+            transition: opacity 0.2s;
         }
         
-        .header .user-info {
-            font-size: 12px;
+        .header-avatar:hover {
+            opacity: 0.8;
+        }
+        
+        .header-info {
+            flex: 1;
+        }
+        
+        .header-info h1 {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+        
+        .header-info .user-login {
+            font-size: 11px;
             color: #888;
         }
         
-        .header .user-info span {
+        .header-info .user-login span {
             color: #007aff;
         }
         
@@ -55,21 +78,39 @@
         
         /* Заголовок текущего чата */
         .chat-header {
-            padding: 15px 20px;
+            padding: 12px 20px;
             background: #111111;
             border-bottom: 1px solid #2c2c2e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
-        .chat-header h3 {
+        .chat-header-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        
+        .chat-header-info {
+            flex: 1;
+        }
+        
+        .chat-header-info h3 {
             font-size: 16px;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         
-        .chat-header h3 span {
+        .chat-header-info h3 span {
             color: #007aff;
         }
         
-        .chat-header p {
+        .chat-header-info p {
             font-size: 11px;
             color: #888;
         }
@@ -89,11 +130,35 @@
             padding: 10px 14px;
             border-radius: 18px;
             word-wrap: break-word;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .message-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .message-content {
+            flex: 1;
         }
         
         .message.own {
             align-self: flex-end;
             background: #007aff;
+            flex-direction: row-reverse;
+        }
+        
+        .message.own .message-avatar {
+            background: #0055bb;
         }
         
         .message.other {
@@ -211,10 +276,28 @@
             padding: 12px 16px;
             cursor: pointer;
             border-bottom: 1px solid #2c2c2e;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
         
         .search-result-item:hover {
             background: #2c2c2e;
+        }
+        
+        .search-result-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .search-result-info {
+            flex: 1;
         }
         
         .search-result-name {
@@ -241,6 +324,7 @@
             border-radius: 12px;
             cursor: pointer;
             transition: background 0.2s;
+            gap: 12px;
         }
         
         .contact-card:hover {
@@ -255,8 +339,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
             font-size: 20px;
+            flex-shrink: 0;
         }
         
         .contact-card-info {
@@ -311,6 +395,7 @@
             margin-bottom: 8px;
             cursor: pointer;
             transition: background 0.2s;
+            gap: 12px;
         }
         
         .chat-item:hover {
@@ -325,8 +410,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-right: 12px;
             font-size: 20px;
+            flex-shrink: 0;
         }
         
         .chat-info {
@@ -354,7 +439,7 @@
             margin-top: 50px;
         }
         
-        /* Модальное окно */
+        /* Модальное окно для аватарки */
         .modal {
             position: fixed;
             top: 0;
@@ -372,24 +457,52 @@
             background: #1a1a1a;
             padding: 24px;
             border-radius: 20px;
-            width: 300px;
+            width: 320px;
             text-align: center;
         }
         
-        .modal-content input {
-            width: 100%;
-            padding: 12px;
-            margin: 16px 0;
-            border-radius: 12px;
-            border: none;
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
             background: #2c2c2e;
-            color: white;
-            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 20px;
+        }
+        
+        .avatar-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .avatar-option {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #2c2c2e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .avatar-option:hover {
+            transform: scale(1.1);
+            background: #007aff;
         }
         
         .modal-buttons {
             display: flex;
             gap: 10px;
+            margin-top: 20px;
         }
         
         .modal-buttons button {
@@ -500,20 +613,41 @@
         // ============ НАСТРОЙКИ ============
         const API_URL = 'https://speak-backend-b43k.onrender.com';
         
+        // Список доступных эмодзи для аватарок
+        const AVATAR_EMOJIS = [
+            '😀', '😎', '🥳', '😍', '🐱', '🐶', '🦊', '🐼',
+            '⭐', '🔥', '💪', '🎨', '🎵', '🏀', '⚽', '🚀',
+            '🌈', '🌸', '🍕', '🍔', '☕', '💻', '📱', '🎮'
+        ];
+        
         // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
         let currentDisplayName = localStorage.getItem('speak_displayName');
         let currentUserId = localStorage.getItem('speak_userId');
+        let currentAvatar = localStorage.getItem('speak_avatar') || '😀';
         let currentChat = localStorage.getItem('speak_current_chat') || null;
-        let currentTab = 'chats';
+        let currentTab = localStorage.getItem('speak_current_tab') || 'chats';
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         let chats = JSON.parse(localStorage.getItem('speak_chats') || '[]');
+        let userAvatars = JSON.parse(localStorage.getItem('speak_user_avatars') || '{}');
         let searchTimeout = null;
         
         function formatDisplayName(name) {
             if (!name) return '';
             return name.startsWith('@') ? name : `@${name}`;
+        }
+        
+        function getAvatarForUser(username, displayName) {
+            if (userAvatars[username]) return userAvatars[username];
+            // Генерируем случайную аватарку на основе имени
+            const index = (username.length + (displayName?.length || 0)) % AVATAR_EMOJIS.length;
+            return AVATAR_EMOJIS[index];
+        }
+        
+        function setAvatarForUser(username, avatar) {
+            userAvatars[username] = avatar;
+            localStorage.setItem('speak_user_avatars', JSON.stringify(userAvatars));
         }
         
         async function apiRequest(endpoint, method, body = null) {
@@ -530,6 +664,55 @@
                 throw new Error('Сессия истекла');
             }
             return response;
+        }
+        
+        // ============ АВАТАРКИ ============
+        function showAvatarModal() {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <h3>Выберите аватарку</h3>
+                    <div class="avatar-preview" id="avatarPreview">${currentAvatar}</div>
+                    <div class="avatar-options" id="avatarOptions">
+                        ${AVATAR_EMOJIS.map(emoji => `
+                            <div class="avatar-option" data-avatar="${emoji}">${emoji}</div>
+                        `).join('')}
+                    </div>
+                    <div class="modal-buttons">
+                        <button class="modal-confirm" id="saveAvatarBtn">Сохранить</button>
+                        <button class="modal-cancel" id="closeAvatarModal">Отмена</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            let selectedAvatar = currentAvatar;
+            
+            document.querySelectorAll('.avatar-option').forEach(opt => {
+                opt.onclick = () => {
+                    selectedAvatar = opt.dataset.avatar;
+                    document.getElementById('avatarPreview').textContent = selectedAvatar;
+                };
+            });
+            
+            document.getElementById('saveAvatarBtn').onclick = () => {
+                currentAvatar = selectedAvatar;
+                localStorage.setItem('speak_avatar', currentAvatar);
+                setAvatarForUser(currentUser, currentAvatar);
+                updateHeaderAvatar();
+                modal.remove();
+                showStatus('Аватарка обновлена');
+            };
+            
+            document.getElementById('closeAvatarModal').onclick = () => modal.remove();
+        }
+        
+        function updateHeaderAvatar() {
+            const headerAvatar = document.getElementById('headerAvatar');
+            if (headerAvatar) {
+                headerAvatar.textContent = currentAvatar;
+            }
         }
         
         // ============ АВТОРИЗАЦИЯ ============
@@ -601,6 +784,13 @@
                     localStorage.setItem('speak_username', currentUser);
                     localStorage.setItem('speak_displayName', currentDisplayName);
                     localStorage.setItem('speak_userId', currentUserId);
+                    
+                    // Загружаем сохранённую аватарку
+                    if (userAvatars[currentUser]) {
+                        currentAvatar = userAvatars[currentUser];
+                        localStorage.setItem('speak_avatar', currentAvatar);
+                    }
+                    
                     location.reload();
                 } else {
                     alert('Неверный логин или пароль');
@@ -639,6 +829,7 @@
                     return;
                 }
                 const userInfo = await response.json();
+                const displayName = userInfo.display_name || username;
                 
                 if (!contacts.includes(username)) {
                     contacts.push(username);
@@ -648,7 +839,8 @@
                     if (!chats.find(c => c.username === username)) {
                         chats.push({
                             username: username,
-                            displayName: userInfo.display_name || username,
+                            displayName: displayName,
+                            avatar: getAvatarForUser(username, displayName),
                             lastMessage: '',
                             lastMessageTime: null
                         });
@@ -666,7 +858,7 @@
         }
         
         function removeContact(username) {
-            if (confirm('Удалить контакт? Все сообщения останутся в чате.')) {
+            if (confirm('Удалить контакт?')) {
                 contacts = contacts.filter(c => c !== username);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 if (currentChat === username) {
@@ -679,14 +871,14 @@
         }
         
         // ============ РАБОТА С ЧАТАМИ ============
-        function selectChat(username, displayName) {
+        function selectChat(username, displayName, avatar) {
             currentChat = username;
             localStorage.setItem('speak_current_chat', username);
             
-            // Обновляем чат в списке
             const chatIndex = chats.findIndex(c => c.username === username);
             if (chatIndex !== -1) {
                 chats[chatIndex].displayName = displayName || username;
+                chats[chatIndex].avatar = avatar || getAvatarForUser(username, displayName);
                 localStorage.setItem('speak_chats', JSON.stringify(chats));
             }
             
@@ -696,7 +888,7 @@
         }
         
         function deleteChat(username) {
-            if (confirm('Удалить чат? Сообщения останутся в истории, но чат исчезнет из списка.')) {
+            if (confirm('Удалить чат?')) {
                 chats = chats.filter(c => c.username !== username);
                 localStorage.setItem('speak_chats', JSON.stringify(chats));
                 if (currentChat === username) {
@@ -722,7 +914,6 @@
                 });
                 input.value = '';
                 
-                // Обновляем последнее сообщение в списке чатов
                 const chatIndex = chats.findIndex(c => c.username === currentChat);
                 if (chatIndex !== -1) {
                     chats[chatIndex].lastMessage = text.substring(0, 30);
@@ -752,16 +943,26 @@
                 const container = document.getElementById('messagesContainer');
                 if (!container) return;
                 
+                const contactAvatar = getAvatarForUser(currentChat, '');
+                
                 if (chatMessages.length === 0) {
                     container.innerHTML = '<div class="empty-messages">💬 Нет сообщений<br>Напишите что-нибудь</div>';
                 } else {
-                    container.innerHTML = chatMessages.map(msg => `
-                        <div class="message ${msg.sender_username === currentUser ? 'own' : 'other'}">
-                            <div class="message-sender">${msg.sender_username === currentUser ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username)}</div>
-                            <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
-                            <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
-                        </div>
-                    `).join('');
+                    container.innerHTML = chatMessages.map(msg => {
+                        const isOwn = msg.sender_username === currentUser;
+                        const avatar = isOwn ? currentAvatar : getAvatarForUser(msg.sender_username, msg.sender_display_name);
+                        const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
+                        return `
+                            <div class="message ${isOwn ? 'own' : 'other'}">
+                                <div class="message-avatar">${avatar}</div>
+                                <div class="message-content">
+                                    <div class="message-sender">${senderName}</div>
+                                    <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
+                                    <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
                     container.scrollTop = container.scrollHeight;
                 }
             } catch (err) {
@@ -771,14 +972,15 @@
         
         // ============ ОТРИСОВКА СТРАНИЦ ============
         async function renderContactsPage() {
-            // Получаем обновлённые данные контактов
             const contactsWithNames = await Promise.all(contacts.map(async (contact) => {
                 try {
                     const response = await apiRequest(`/api/user_info/${contact}`, 'GET');
                     const userInfo = await response.json();
-                    return { username: contact, displayName: userInfo.display_name || contact };
+                    const displayName = userInfo.display_name || contact;
+                    const avatar = getAvatarForUser(contact, displayName);
+                    return { username: contact, displayName: displayName, avatar: avatar };
                 } catch (err) {
-                    return { username: contact, displayName: contact };
+                    return { username: contact, displayName: contact, avatar: getAvatarForUser(contact, contact) };
                 }
             }));
             
@@ -791,8 +993,8 @@
                     
                     <div class="contacts-list">
                         ${contactsWithNames.map(contact => `
-                            <div class="contact-card" onclick="selectChat('${contact.username}', '${contact.displayName}')">
-                                <div class="contact-avatar">👤</div>
+                            <div class="contact-card" onclick="selectChat('${contact.username}', '${contact.displayName}', '${contact.avatar}')">
+                                <div class="contact-avatar">${contact.avatar}</div>
                                 <div class="contact-card-info">
                                     <div class="contact-card-name">${formatDisplayName(contact.displayName)}</div>
                                     <div class="contact-card-username">${contact.username}</div>
@@ -821,14 +1023,14 @@
             return `
                 <div class="chats-page">
                     ${sortedChats.map(chat => `
-                        <div class="chat-item" onclick="selectChat('${chat.username}', '${chat.displayName}')">
-                            <div class="chat-avatar">💬</div>
+                        <div class="chat-item" onclick="selectChat('${chat.username}', '${chat.displayName}', '${chat.avatar || getAvatarForUser(chat.username, chat.displayName)}')">
+                            <div class="chat-avatar">${chat.avatar || getAvatarForUser(chat.username, chat.displayName)}</div>
                             <div class="chat-info">
                                 <div class="chat-name">${formatDisplayName(chat.displayName)}</div>
                                 <div class="chat-last-message">${chat.lastMessage || 'Нет сообщений'}</div>
                             </div>
                             <div class="chat-time">${chat.lastMessageTime ? new Date(chat.lastMessageTime).toLocaleTimeString().slice(0,5) : ''}</div>
-                            <div class="delete-contact" style="margin-left:8px;" onclick="event.stopPropagation(); deleteChat('${chat.username}')">🗑️</div>
+                            <div class="delete-contact" onclick="event.stopPropagation(); deleteChat('${chat.username}')">🗑️</div>
                         </div>
                     `).join('')}
                 </div>
@@ -840,11 +1042,14 @@
                 return `
                     <div class="chat-area">
                         <div class="chat-header">
-                            <h3>Выберите чат</h3>
-                            <p>Выберите диалог из списка чатов</p>
+                            <div class="chat-header-avatar">💬</div>
+                            <div class="chat-header-info">
+                                <h3>Выберите чат</h3>
+                                <p>Выберите диалог из списка чатов</p>
+                            </div>
                         </div>
                         <div class="messages-container" id="messagesContainer">
-                            <div class="empty-messages">👈 Выберите чат слева или перейдите в раздел "Чаты"</div>
+                            <div class="empty-messages">👈 Выберите чат</div>
                         </div>
                         <div class="input-panel">
                             <input type="text" id="messageInput" placeholder="Введите сообщение..." disabled>
@@ -855,14 +1060,21 @@
             }
             
             let displayName = currentChat;
+            let avatar = '👤';
             const chat = chats.find(c => c.username === currentChat);
-            if (chat) displayName = chat.displayName;
+            if (chat) {
+                displayName = chat.displayName;
+                avatar = chat.avatar || getAvatarForUser(currentChat, displayName);
+            }
             
             return `
                 <div class="chat-area">
                     <div class="chat-header">
-                        <h3>Чат с <span>${formatDisplayName(displayName)}</span></h3>
-                        <p>Переписка с ${currentChat}</p>
+                        <div class="chat-header-avatar">${avatar}</div>
+                        <div class="chat-header-info">
+                            <h3>Чат с <span>${formatDisplayName(displayName)}</span></h3>
+                            <p>${currentChat}</p>
+                        </div>
                     </div>
                     <div class="messages-container" id="messagesContainer">
                         <div class="empty-messages">Загрузка сообщений...</div>
@@ -885,13 +1097,11 @@
                 mainContent.innerHTML = await renderContactsPage();
             }
             
-            // Если есть активный чат, показываем область чата
             const chatAreaContainer = document.getElementById('chatAreaContainer');
             if (chatAreaContainer) {
                 chatAreaContainer.innerHTML = renderChatArea();
                 if (currentChat) {
                     await loadMessages();
-                    // Настраиваем обработчик Enter
                     const msgInput = document.getElementById('messageInput');
                     if (msgInput) {
                         msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
@@ -921,179 +1131,5 @@
                     resultsDiv.innerHTML = '<div style="padding:10px; color:#888;">Пользователи не найдены</div>';
                     resultsDiv.style.display = 'block';
                 } else {
-                    resultsDiv.innerHTML = results.map(user => `
-                        <div class="search-result-item" onclick="addContactBySearch('${user.username}', '${user.display_name}')">
-                            <div class="search-result-name">${formatDisplayName(user.display_name || user.username)}</div>
-                            <div class="search-result-username">${user.username}</div>
-                        </div>
-                    `).join('');
-                    resultsDiv.style.display = 'block';
-                }
-            }, 500);
-        }
-        
-        async function addContactBySearch(username, displayName) {
-            if (!contacts.includes(username)) {
-                contacts.push(username);
-                localStorage.setItem('speak_contacts', JSON.stringify(contacts));
-                
-                if (!chats.find(c => c.username === username)) {
-                    chats.push({
-                        username: username,
-                        displayName: displayName || username,
-                        lastMessage: '',
-                        lastMessageTime: null
-                    });
-                    localStorage.setItem('speak_chats', JSON.stringify(chats));
-                }
-                
-                document.getElementById('searchInput').value = '';
-                document.getElementById('searchResults').innerHTML = '';
-                document.getElementById('searchResults').style.display = 'none';
-                renderCurrentPage();
-                showStatus('Контакт добавлен');
-            } else {
-                showStatus('Контакт уже есть', true);
-            }
-        }
-        
-        function showStatus(msg, isError = false) {
-            const statusDiv = document.getElementById('status');
-            if (statusDiv) {
-                statusDiv.textContent = msg;
-                statusDiv.className = isError ? 'status error' : 'status';
-                setTimeout(() => {
-                    if (statusDiv.textContent === msg) statusDiv.textContent = '';
-                }, 3000);
-            }
-        }
-        
-        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
-        function renderMainApp() {
-            document.getElementById('app').innerHTML = `
-                <div class="app-container">
-                    <div class="header">
-                        <h1>🔒 Speak</h1>
-                        <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
-                    </div>
-                    
-                    <div style="display: flex; flex: 1; overflow: hidden;">
-                        <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
-                            <div id="mainContent" style="flex: 1; overflow-y: auto;"></div>
-                        </div>
-                        
-                        <div id="chatAreaContainer" style="flex: 2; display: flex; flex-direction: column; border-left: 1px solid #2c2c2e; overflow: hidden;">
-                            ${renderChatArea()}
-                        </div>
-                    </div>
-                    
-                    <div class="bottom-tabs">
-                        <button class="tab ${currentTab === 'chats' ? 'active' : ''}" onclick="switchTab('chats')">💬 Чаты</button>
-                        <button class="tab ${currentTab === 'contacts' ? 'active' : ''}" onclick="switchTab('contacts')">👥 Контакты</button>
-                    </div>
-                    
-                    <div id="status" class="status"></div>
-                </div>
-            `;
-            
-            renderCurrentPage();
-            
-            if (currentChat) {
-                setTimeout(() => loadMessages(), 100);
-                const msgInput = document.getElementById('messageInput');
-                if (msgInput) {
-                    msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-                }
-            }
-            
-            setInterval(() => {
-                if (currentChat) loadMessages();
-            }, 3000);
-        }
-        
-        function switchTab(tab) {
-            currentTab = tab;
-            localStorage.setItem('speak_current_tab', tab);
-            renderCurrentPage();
-            
-            // Обновляем активный класс кнопок
-            const tabs = document.querySelectorAll('.tab');
-            tabs.forEach(t => t.classList.remove('active'));
-            if (tab === 'chats') {
-                tabs[0]?.classList.add('active');
-            } else {
-                tabs[1]?.classList.add('active');
-            }
-        }
-        
-        // ============ ЭКРАН ВХОДА ============
-        function renderLogin() {
-            document.getElementById('app').innerHTML = `
-                <div class="login-wrapper">
-                    <div class="login-card">
-                        <h1>🔒 Speak</h1>
-                        <div class="sub">Безопасный мессенджер</div>
-                        
-                        <div class="switch-buttons">
-                            <button id="showLoginBtn" class="active">Вход</button>
-                            <button id="showRegisterBtn">Регистрация</button>
-                        </div>
-                        
-                        <div id="loginForm">
-                            <input type="text" id="loginUsername" placeholder="Логин" autocomplete="off">
-                            <input type="password" id="loginPassword" placeholder="Пароль">
-                            <button id="doLoginBtn">Войти</button>
-                        </div>
-                        
-                        <div id="registerForm" style="display:none;">
-                            <input type="text" id="regDisplayName" placeholder="Отображаемое имя (будет добавлено @)" autocomplete="off">
-                            <input type="text" id="regUsername" placeholder="Логин" autocomplete="off">
-                            <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
-                            <button id="doRegisterBtn">Зарегистрироваться</button>
-                        </div>
-                        
-                        <div id="status" class="status"></div>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('showLoginBtn').onclick = () => {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('registerForm').style.display = 'none';
-                document.getElementById('showLoginBtn').classList.add('active');
-                document.getElementById('showRegisterBtn').classList.remove('active');
-            };
-            
-            document.getElementById('showRegisterBtn').onclick = () => {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('registerForm').style.display = 'block';
-                document.getElementById('showRegisterBtn').classList.add('active');
-                document.getElementById('showLoginBtn').classList.remove('active');
-            };
-            
-            document.getElementById('doLoginBtn').onclick = login;
-            document.getElementById('doRegisterBtn').onclick = register;
-        }
-        
-        // ============ ЗАПУСК ============
-        if (authToken && currentUser) {
-            renderMainApp();
-        } else {
-            renderLogin();
-        }
-        
-        // Делаем функции глобальными
-        window.register = register;
-        window.login = login;
-        window.logout = logout;
-        window.addContact = addContact;
-        window.removeContact = removeContact;
-        window.selectChat = selectChat;
-        window.deleteChat = deleteChat;
-        window.sendMessage = sendMessage;
-        window.switchTab = switchTab;
-        window.onSearchInput = onSearchInput;
-        window.addContactBySearch = addContactBySearch;
-    </script>
-</body>
-</html>
+                    resultsDiv.innerHTML = results.map(user => {
+                        const avatar = getAvatarForUser(user.username
