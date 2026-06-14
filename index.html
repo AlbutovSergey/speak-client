@@ -665,11 +665,25 @@
             }
         }
         
-        // ============ ВЫХОД ============
-        function logout() {
-            localStorage.clear();
-            location.reload();
-        }
+// ============ ВЫХОД ============
+function logout() {
+    // Сохраняем контакты и чаты перед очисткой
+    const savedContacts = localStorage.getItem('speak_contacts');
+    const savedChats = localStorage.getItem('speak_chats');
+    
+    // Очищаем только данные сессии
+    localStorage.removeItem('speak_token');
+    localStorage.removeItem('speak_username');
+    localStorage.removeItem('speak_nickname');
+    localStorage.removeItem('speak_userId');
+    localStorage.removeItem('speak_current_chat');
+    
+    // Восстанавливаем контакты и чаты
+    if (savedContacts) localStorage.setItem('speak_contacts', savedContacts);
+    if (savedChats) localStorage.setItem('speak_chats', savedChats);
+    
+    location.reload();
+}
         
         // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContact() {
