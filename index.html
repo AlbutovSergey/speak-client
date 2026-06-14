@@ -337,4 +337,115 @@
         
         async function loadMessagesForChat(chatUsername) {
             const messages = await loadMessages();
-            const relevant
+            const relevant = messages.filter(m => m.senderUsername === chatUsername || (m.isOwn && currentChat === chatUsername));
+            const chatArea = document.getElementById('chatArea');
+            if (chatArea) {
+                if (relevant.length === 0) {
+                    chatArea.innerHTML = '<div style="text-align:center; color:#888; margin-top:40px;">💬 Напишите первое сообщение</div>';
+                } else {
+                    chatArea.innerHTML = relevant.map(m => `
+                        <div class="message ${m.isOwn ? 'own' : 'other'}">
+                            <strong>${m.isOwn ? 'Вы' : (m.senderDisplayName || m.senderUsername)}:</strong> ${m.text}
+                            <div style="font-size: 10px; color:#666; margin-top: 4px;">${m.isOwn ? '' : '@' + m.senderUsername}</div>
+                        </div>
+                    `).join('');
+                    chatArea.scrollTop = chatArea.scrollHeight;
+                }
+            }
+        }
+        
+        function showMainUI() {
+            const displayName = currentUserDisplayName || currentUsername;
+            document.getElementById('app').innerHTML = `
+                <div class="container">
+                    <div class="header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>💬 Speak — ${displayName}</span>
+                            <div>
+                                <button class="change-name-btn" id="changeNameBtn">✏️ Имя</button>
+                                <button id="logoutBtn">🚪 Выйти</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="contacts-area" id="contactsArea">Загрузка...</div>
+                    <div class="chat-area" id="chatArea">👈 Выберите контакт</div>
+                    <div class="input-area">
+                        <input type="text" id="messageInput" placeholder="Сообщение...">
+                        <button id="sendBtn">→</button>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('changeNameBtn').onclick = () => {
+                const newName = prompt('Введите новое отображаемое имя:', currentUserDisplayName);
+                if (newName && newName.trim()) {
+                    // TODO: реализовать API смены имени
+                    alert('Функция смены имени будет добавлена в следующей версии');
+                }
+            };
+            
+            document.getElementById('logoutBtn').onclick = async () => {
+                await logout();
+                location.reload();
+            };
+            
+            document.getElementById('sendBtn').onclick = async () => {
+                if (!currentChat) {
+                    alert('Выберите контакт');
+                    return;
+                }
+                const input = document.getElementById('messageInput');
+                const text = input.value.trim();
+                if (!text) return;
+                await sendMessage(currentChat, text);
+                input.value = '';
+                await loadMessagesForChat(currentChat);
+            };
+            
+            loadChatList();
+        }
+        
+        // ============ ЗАПУСК ============
+        async function startApp() {
+            await initSodium();
+            
+            const savedToken = localStorage.getItem('speak_token');
+            const savedUsername = localStorage.getItem('speak_username');
+            const savedDisplayName = localStorage.getItem('speak_displayName');
+            const savedUserId = localStorage.getItem('speak_userId');
+            const savedPrivateKey = localStorage.getItem('speak_privateKey');
+            
+            if (savedToken && savedUsername) {
+                authToken = savedToken;
+                currentUsername = savedUsername;
+                currentUserDisplayName = savedDisplayName || savedUsername;
+                currentUserId = savedUserId;
+                privateKey = savedPrivateKey;
+                
+                try {
+                    const response = await apiRequest('/api/verify', 'GET');
+                    const data = await response.json();
+                    if (data.valid) {
+                        showMainUI();
+                    } else {
+                        await logout();
+                        showLoginUI();
+                    }
+                } catch (e) {
+                    await logout();
+                    showLoginUI();
+                }
+            } else {
+                showLoginUI();
+            }
+        }
+        
+        startApp();
+        setInterval(async () => {
+            if (currentUsername && currentChat) {
+                await loadMessagesForChat(currentChat);
+            }
+        }, 3000);
+    </script>
+</body>
+</html>
