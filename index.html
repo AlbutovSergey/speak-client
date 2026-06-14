@@ -365,6 +365,12 @@
         .switch-buttons .active {
             background: #007aff;
         }
+        
+        .login-hint {
+            font-size: 11px;
+            color: #666;
+            margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -382,6 +388,18 @@
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         let searchTimeout = null;
+        
+        // Функция для форматирования отображаемого имени (добавляет @ если нет)
+        function formatDisplayName(name) {
+            if (!name) return '';
+            return name.startsWith('@') ? name : `@${name}`;
+        }
+        
+        // Функция для очистки отображаемого имени (убирает @ для проверки)
+        function cleanDisplayName(name) {
+            if (!name) return '';
+            return name.replace(/^@/, '');
+        }
         
         async function apiRequest(endpoint, method, body = null) {
             const headers = { 'Content-Type': 'application/json' };
@@ -401,9 +419,14 @@
         
         // ============ РЕГИСТРАЦИЯ ============
         async function register() {
-            const displayName = document.getElementById('regDisplayName').value.trim();
+            let displayName = document.getElementById('regDisplayName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
+            
+            // Добавляем @ к отображаемому имени если его нет
+            if (displayName && !displayName.startsWith('@')) {
+                displayName = '@' + displayName;
+            }
             
             if (!displayName) { alert('Введите отображаемое имя'); return; }
             if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
@@ -482,8 +505,11 @@
                 return [];
             }
             
+            // Очищаем запрос от @ для поиска
+            const cleanQuery = query.replace(/^@/, '');
+            
             try {
-                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(query), 'GET');
+                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(cleanQuery), 'GET');
                 const users = await response.json();
                 return users.filter(u => u.username !== currentUser);
             } catch (err) {
@@ -504,8 +530,8 @@
             
             resultsDiv.innerHTML = results.map(user => `
                 <div class="search-result-item" onclick="addContactByUsername('${user.username}')">
-                    <div><strong>${user.display_name || user.username}</strong></div>
-                    <div style="font-size:12px; color:#888;">@${user.username}</div>
+                    <div><strong>${formatDisplayName(user.display_name || user.username)}</strong></div>
+                    <div style="font-size:12px; color:#888;">${user.username}</div>
                 </div>
             `).join('');
             resultsDiv.style.display = 'block';
@@ -619,7 +645,7 @@
                 } else {
                     messagesDiv.innerHTML = chatMessages.map(msg => `
                         <div class="message ${msg.sender_username === currentUser ? 'own' : 'other'}">
-                            <div class="message-sender">${msg.sender_username === currentUser ? 'Вы' : (msg.sender_display_name || msg.sender_username)}</div>
+                            <div class="message-sender">${msg.sender_username === currentUser ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username)}</div>
                             <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
                             <div class="message-time">${msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ''}</div>
                         </div>
@@ -656,8 +682,8 @@
                 <div class="contact-item ${currentChat === contact.username ? 'active' : ''}" onclick="selectChat('${contact.username}')">
                     <div class="contact-avatar">👤</div>
                     <div class="contact-info">
-                        <div class="contact-name">${contact.displayName}</div>
-                        <div class="contact-username">@${contact.username}</div>
+                        <div class="contact-name">${formatDisplayName(contact.displayName)}</div>
+                        <div class="contact-username">${contact.username}</div>
                     </div>
                     <div style="cursor:pointer; opacity:0.5; margin-left:auto;" onclick="event.stopPropagation(); removeContact('${contact.username}')">🗑️</div>
                 </div>
@@ -677,8 +703,8 @@
             } catch (err) {}
             
             renderContacts();
-            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${displayName}</span>`;
-            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с @${username}`;
+            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
+            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
             document.querySelector('.chat-main').style.display = 'flex';
             loadMessages();
         }
@@ -721,7 +747,7 @@
                         </div>
                         
                         <div id="registerForm" style="display:none;">
-                            <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
+                            <input type="text" id="regDisplayName" placeholder="Отображаемое имя (будет добавлено @)" autocomplete="off">
                             <input type="text" id="regUsername" placeholder="Логин" autocomplete="off">
                             <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                             <button id="doRegisterBtn">Зарегистрироваться</button>
@@ -757,7 +783,7 @@
                     <div class="sidebar">
                         <div class="sidebar-header">
                             <h2>💬 Speak</h2>
-                            <div class="user-info">Вы: <span>${currentDisplayName || currentUser}</span> (${currentUser})</div>
+                            <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
                         </div>
                         
                         <div class="search-area">
@@ -817,6 +843,7 @@
         window.onSearchInput = onSearchInput;
         window.searchUsers = searchUsers;
         window.showSearchResults = showSearchResults;
+        window.formatDisplayName = formatDisplayName;
     </script>
 </body>
 </html>
