@@ -7,9 +7,19 @@
     <meta name="theme-color" content="#000000">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; }
         
-        /* Сайдбар со списком контактов */
+        body { 
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; 
+            background: #0a0a0a; 
+            color: white; 
+        }
+        
+        /* Стили для чата */
+        .chat-layout {
+            display: flex;
+            height: 100vh;
+        }
+        
         .sidebar {
             width: 280px;
             background: #111111;
@@ -37,6 +47,46 @@
         
         .user-info span {
             color: #007aff;
+        }
+        
+        .search-area {
+            padding: 15px;
+            border-bottom: 1px solid #2c2c2e;
+            background: #0f0f0f;
+        }
+        
+        .search-area input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 20px;
+            border: none;
+            background: #2c2c2e;
+            color: white;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .search-area input::placeholder {
+            color: #666;
+        }
+        
+        .search-results {
+            position: absolute;
+            background: #1a1a1a;
+            border-radius: 12px;
+            width: 250px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .search-result-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 8px;
+        }
+        
+        .search-result-item:hover {
+            background: #2c2c2e;
         }
         
         .contacts-list {
@@ -110,7 +160,6 @@
             margin-top: 10px;
         }
         
-        /* Основная область чата */
         .chat-main {
             flex: 1;
             display: flex;
@@ -224,7 +273,7 @@
             .sidebar {
                 width: 80px;
             }
-            .sidebar-header h2, .contact-info, .user-info {
+            .sidebar-header h2, .contact-info, .user-info, .search-area {
                 display: none;
             }
             .contact-item {
@@ -246,13 +295,12 @@
             color: #ff3b30;
         }
         
-        /* Стили для экрана входа (прежний дизайн) */
+        /* Стили для экрана входа */
         .login-wrapper {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            width: 100%;
+            min-height: 100vh;
             background: #0a0a0a;
         }
         
@@ -317,6 +365,13 @@
         .switch-buttons .active {
             background: #007aff;
         }
+        
+        .login-hint {
+            font-size: 11px;
+            color: #666;
+            margin-top: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -332,7 +387,15 @@
         let currentUserId = localStorage.getItem('speak_userId');
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
+        let searchTimeout = null;
         
+        // Функция для очистки логина (убирает @ в начале)
+        function cleanUsername(username) {
+            if (!username) return '';
+            return username.replace(/^@/, '').toLowerCase().trim();
+        }
+        
+        // Функция для отображения имени с @
         function formatUsername(username) {
             return username ? `@${username}` : '';
         }
@@ -353,14 +416,17 @@
             return response;
         }
         
-        // ============ РЕГИСТРАЦИЯ ============
+        // ============ РЕГИСТРАЦИЯ (автоматически убираем @) ============
         async function register() {
-            const displayName = document.getElementById('regDisplayName').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
+            let displayName = document.getElementById('regDisplayName').value.trim();
+            let username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             
+            // Убираем @ из логина если пользователь ввёл
+            username = username.replace(/^@/, '').toLowerCase();
+            
             if (!displayName) { alert('Введите отображаемое имя'); return; }
-            if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
+            if (username.length < 3) { alert('Логин должен быть не менее 3 символов (без @)'); return; }
             if (password.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; }
             
             try {
@@ -390,8 +456,11 @@
         
         // ============ ВХОД ============
         async function login() {
-            const username = document.getElementById('loginUsername').value.trim();
+            let username = document.getElementById('loginUsername').value.trim();
             const password = document.getElementById('loginPassword').value;
+            
+            // Убираем @ из логина если пользователь ввёл
+            username = username.replace(/^@/, '').toLowerCase();
             
             if (!username || !password) {
                 alert('Заполните все поля');
@@ -424,19 +493,91 @@
             location.reload();
         }
         
-        // ============ ДОБАВИТЬ КОНТАКТ ============
-        async function addContact() {
-            const username = prompt('Введите логин собеседника (без @):');
-            if (!username || username === currentUser) return;
+        // ============ ПОИСК ПОЛЬЗОВАТЕЛЕЙ ============
+        async function searchUsers(query) {
+            if (!query || query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
+                return [];
+            }
             
-            const cleanUsername = username.replace(/^@/, '');
+            const cleanQuery = query.replace(/^@/, '').toLowerCase();
+            
+            try {
+                // Получаем всех пользователей (нужен эндпоинт на бэкенде)
+                // Пока используем заглушку - поиск по контактам и известным пользователям
+                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(cleanQuery), 'GET');
+                const users = await response.json();
+                return users;
+            } catch (err) {
+                // Если эндпоинта нет, просто ищем среди контактов
+                console.log('Search API not available yet');
+                return [];
+            }
+        }
+        
+        function showSearchResults(results) {
+            const resultsDiv = document.getElementById('searchResults');
+            if (!resultsDiv) return;
+            
+            if (results.length === 0) {
+                resultsDiv.innerHTML = '<div style="padding:10px; color:#888;">Пользователи не найдены</div>';
+                resultsDiv.style.display = 'block';
+                return;
+            }
+            
+            resultsDiv.innerHTML = results.map(user => `
+                <div class="search-result-item" onclick="addContactByUsername('${user.username}')">
+                    <div><strong>${user.display_name || user.username}</strong></div>
+                    <div style="font-size:12px; color:#888;">${formatUsername(user.username)}</div>
+                </div>
+            `).join('');
+            resultsDiv.style.display = 'block';
+        }
+        
+        // ============ ДОБАВИТЬ КОНТАКТ ПО ЛОГИНУ ============
+        async function addContactByUsername(username) {
+            const cleanUsername = cleanUsername(username);
+            if (!cleanUsername || cleanUsername === currentUser) return;
+            
             if (!contacts.includes(cleanUsername)) {
                 contacts.push(cleanUsername);
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 renderContacts();
                 showStatus(`Контакт ${formatUsername(cleanUsername)} добавлен`);
+                document.getElementById('searchInput').value = '';
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
             } else {
                 showStatus(`Контакт ${formatUsername(cleanUsername)} уже есть`, true);
+            }
+        }
+        
+        // ============ ДОБАВИТЬ КОНТАКТ (через кнопку) ============
+        async function addContact() {
+            const input = prompt('Введите логин собеседника (с @ или без):');
+            if (!input) return;
+            const username = cleanUsername(input);
+            if (!username || username === currentUser) return;
+            
+            // Проверяем существование пользователя через API
+            try {
+                const response = await apiRequest(`/api/public_key/${username}`, 'GET');
+                if (response.status === 404) {
+                    showStatus(`Пользователь ${formatUsername(username)} не найден`, true);
+                    return;
+                }
+                
+                if (!contacts.includes(username)) {
+                    contacts.push(username);
+                    localStorage.setItem('speak_contacts', JSON.stringify(contacts));
+                    renderContacts();
+                    showStatus(`Контакт ${formatUsername(username)} добавлен`);
+                } else {
+                    showStatus(`Контакт ${formatUsername(username)} уже есть`, true);
+                }
+            } catch (err) {
+                showStatus(`Ошибка проверки пользователя: ${err.message}`, true);
             }
         }
         
@@ -546,7 +687,25 @@
             loadMessages();
         }
         
-        // ============ ЭКРАН ВХОДА (ПРЕЖНИЙ ДИЗАЙН) ============
+        // ============ ОБРАБОТКА ПОИСКА ============
+        function onSearchInput() {
+            const input = document.getElementById('searchInput');
+            const query = input.value.trim();
+            
+            if (searchTimeout) clearTimeout(searchTimeout);
+            
+            if (query.length < 2) {
+                document.getElementById('searchResults').innerHTML = '';
+                document.getElementById('searchResults').style.display = 'none';
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                searchUsers(query).then(showSearchResults);
+            }, 500);
+        }
+        
+        // ============ ЭКРАН ВХОДА ============
         function renderLogin() {
             document.getElementById('app').innerHTML = `
                 <div class="login-wrapper">
@@ -560,18 +719,19 @@
                         </div>
                         
                         <div id="loginForm">
-                            <input type="text" id="loginUsername" placeholder="Логин" autocomplete="off">
+                            <input type="text" id="loginUsername" placeholder="Логин (можно с @)" autocomplete="off">
                             <input type="password" id="loginPassword" placeholder="Пароль">
                             <button id="doLoginBtn">Войти</button>
                         </div>
                         
                         <div id="registerForm" style="display:none;">
                             <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
-                            <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" autocomplete="off">
+                            <input type="text" id="regUsername" placeholder="Логин (без @)" autocomplete="off">
                             <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                             <button id="doRegisterBtn">Зарегистрироваться</button>
                         </div>
                         
+                        <div class="login-hint">💡 При входе можно указывать логин с @ или без</div>
                         <div id="status" class="status"></div>
                     </div>
                 </div>
@@ -598,33 +758,40 @@
         // ============ ОСНОВНОЙ ИНТЕРФЕЙС ЧАТА ============
         function renderChat() {
             document.getElementById('app').innerHTML = `
-                <div class="sidebar">
-                    <div class="sidebar-header">
-                        <h2>💬 Speak</h2>
-                        <div class="user-info">Вы: <span>${formatUsername(currentUser)}</span></div>
+                <div class="chat-layout">
+                    <div class="sidebar">
+                        <div class="sidebar-header">
+                            <h2>💬 Speak</h2>
+                            <div class="user-info">Вы: <span>${formatUsername(currentUser)}</span></div>
+                        </div>
+                        
+                        <div class="search-area">
+                            <input type="text" id="searchInput" placeholder="🔍 Поиск пользователей..." oninput="onSearchInput()">
+                            <div id="searchResults" class="search-results" style="display:none;"></div>
+                        </div>
+                        
+                        <div class="contacts-list" id="contactsList"></div>
+                        
+                        <div class="add-contact">
+                            <button onclick="addContact()">➕ Добавить контакт</button>
+                            <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
+                        </div>
                     </div>
                     
-                    <div class="contacts-list" id="contactsList"></div>
-                    
-                    <div class="add-contact">
-                        <button onclick="addContact()">➕ Добавить контакт</button>
-                        <button class="logout-btn" onclick="logout()">🚪 Выйти</button>
-                    </div>
-                </div>
-                
-                <div class="chat-main" style="display: none;">
-                    <div class="chat-header">
-                        <h3 id="chatHeaderName">Выберите чат</h3>
-                        <p id="chatHeaderStatus">Выберите собеседника из списка</p>
-                    </div>
-                    
-                    <div class="messages-area" id="messagesArea">
-                        <div class="empty-state">👈 Выберите чат слева</div>
-                    </div>
-                    
-                    <div class="input-area">
-                        <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
-                        <button onclick="sendMessage()">→</button>
+                    <div class="chat-main" style="display: none;">
+                        <div class="chat-header">
+                            <h3 id="chatHeaderName">Выберите чат</h3>
+                            <p id="chatHeaderStatus">Выберите собеседника из списка</p>
+                        </div>
+                        
+                        <div class="messages-area" id="messagesArea">
+                            <div class="empty-state">👈 Выберите чат слева</div>
+                        </div>
+                        
+                        <div class="input-area">
+                            <input type="text" id="messageInput" placeholder="Сообщение..." autocomplete="off">
+                            <button onclick="sendMessage()">→</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -643,13 +810,18 @@
             renderLogin();
         }
         
+        // Делаем функции глобальными
         window.register = register;
         window.login = login;
         window.logout = logout;
         window.addContact = addContact;
+        window.addContactByUsername = addContactByUsername;
         window.removeContact = removeContact;
         window.sendMessage = sendMessage;
         window.selectChat = selectChat;
+        window.onSearchInput = onSearchInput;
+        window.searchUsers = searchUsers;
+        window.showSearchResults = showSearchResults;
     </script>
 </body>
 </html>
