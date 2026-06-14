@@ -238,15 +238,15 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
-        }
-        
-               /* Сообщения */
+        } 
+        /* Сообщения */
         .message {
             max-width: 85%;
             padding: 8px 12px;
             border-radius: 18px;
             word-wrap: break-word;
             display: inline-block;
+            position: relative;
         }
         
         .message.own {
@@ -266,13 +266,17 @@
         .message-text {
             font-size: 14px;
             line-height: 1.3;
+            display: inline;
         }
         
         .message-time {
             font-size: 9px;
             color: rgba(255,255,255,0.6);
-            margin-top: 3px;
-            text-align: right;
+            margin-left: 8px;
+            display: inline;
+            vertical-align: baseline;
+            position: relative;
+            bottom: -2px;
         }
         /* Панель ввода сообщения */
         .input-area {
@@ -666,25 +670,25 @@
             }
         }
         
-// ============ ВЫХОД ============
-function logout() {
-    // Сохраняем контакты и чаты перед очисткой
-    const savedContacts = localStorage.getItem('speak_contacts');
-    const savedChats = localStorage.getItem('speak_chats');
-    
-    // Очищаем только данные сессии
-    localStorage.removeItem('speak_token');
-    localStorage.removeItem('speak_username');
-    localStorage.removeItem('speak_nickname');
-    localStorage.removeItem('speak_userId');
-    localStorage.removeItem('speak_current_chat');
-    
-    // Восстанавливаем контакты и чаты
-    if (savedContacts) localStorage.setItem('speak_contacts', savedContacts);
-    if (savedChats) localStorage.setItem('speak_chats', savedChats);
-    
-    location.reload();
-}
+        // ============ ВЫХОД ============
+        function logout() {
+            // Сохраняем контакты и чаты перед очисткой
+            const savedContacts = localStorage.getItem('speak_contacts');
+            const savedChats = localStorage.getItem('speak_chats');
+            
+            // Очищаем только данные сессии
+            localStorage.removeItem('speak_token');
+            localStorage.removeItem('speak_username');
+            localStorage.removeItem('speak_nickname');
+            localStorage.removeItem('speak_userId');
+            localStorage.removeItem('speak_current_chat');
+            
+            // Восстанавливаем контакты и чаты
+            if (savedContacts) localStorage.setItem('speak_contacts', savedContacts);
+            if (savedChats) localStorage.setItem('speak_chats', savedChats);
+            
+            location.reload();
+        }
         
         // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContact() {
@@ -763,7 +767,7 @@ function logout() {
             }
         }
         
-        // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
+               // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
         async function loadMessages() {
             if (!authToken || !currentChat) return;
             
@@ -791,8 +795,7 @@ function logout() {
                         }
                         return `
                             <div class="message ${isOwn ? 'own' : 'other'}">
-                                <div class="message-text">${msg.encrypted_payload || '[сообщение]'}</div>
-                                <div class="message-time">${messageTime}</div>
+                                <div class="message-text">${msg.encrypted_payload || '[сообщение]'} <span class="message-time">${messageTime}</span></div>
                             </div>
                         `;
                     }).join('');
