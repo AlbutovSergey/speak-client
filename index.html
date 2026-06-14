@@ -394,6 +394,37 @@
             // Обновляем сообщения каждые 5 секунд
             setInterval(loadMessages, 5000);
         }
+        let sodium = null;
+
+async function initSodium() {
+    await window.sodium.ready;
+    sodium = window.sodium;
+}
+
+async function encryptMessage(message, recipientPublicKey, senderPrivateKey) {
+    const recipientPub = sodium.from_base64(recipientPublicKey);
+    const senderPriv = sodium.from_base64(senderPrivateKey);
+    const nonce = sodium.randombytes_buf(sodium.crypto_box_NONCEBYTES);
+    const encrypted = sodium.crypto_box_easy(
+        sodium.from_string(message),
+        nonce,
+        recipientPub,
+        senderPriv
+    );
+    return { payload: sodium.to_base64(encrypted), nonce: sodium.to_base64(nonce) };
+}
+
+async function decryptMessage(encryptedPayload, nonce, senderPublicKey, recipientPrivateKey) {
+    const senderPub = sodium.from_base64(senderPublicKey);
+    const recipientPriv = sodium.from_base64(recipientPrivateKey);
+    const decrypted = sodium.crypto_box_open_easy(
+        sodium.from_base64(encryptedPayload),
+        sodium.from_base64(nonce),
+        senderPub,
+        recipientPriv
+    );
+    return sodium.to_string(decrypted);
+}
     </script>
     <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/libsodium-wrappers.min.js"></script>
 </body>
