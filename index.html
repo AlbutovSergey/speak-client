@@ -9,14 +9,12 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: white; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* Основной контейнер */
         .app-container {
             display: flex;
             flex-direction: column;
             height: 100vh;
         }
         
-        /* Шапка */
         .header {
             padding: 16px 20px;
             background: #1a1a1a;
@@ -39,7 +37,6 @@
             color: #007aff;
         }
         
-        /* Область содержимого */
         .content-area {
             flex: 1;
             overflow: hidden;
@@ -58,7 +55,6 @@
             flex-direction: column;
         }
         
-        /* Страница контактов */
         .contacts-page {
             flex: 1;
             overflow-y: auto;
@@ -188,7 +184,6 @@
             width: 100%;
         }
         
-        /* Страница чата */
         .chat-page {
             flex: 1;
             display: flex;
@@ -301,7 +296,6 @@
             margin-top: 50px;
         }
         
-        /* Нижние вкладки */
         .bottom-tabs {
             display: flex;
             background: #111111;
@@ -338,7 +332,6 @@
             color: #ff3b30;
         }
         
-        /* Стили для экрана входа */
         .login-wrapper {
             display: flex;
             justify-content: center;
@@ -418,15 +411,65 @@
         // ============ НАСТРОЙКИ ============
         const API_URL = 'https://speak-backend-b43k.onrender.com';
         
+        // ============ ЗВУКОВОЕ УВЕДОМЛЕНИЕ ============
+        let audioContext = null;
+        let lastMessageCount = 0;
+        let soundEnabled = true;
+        
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            
+            try {
+                // Создаём звук через Web Audio API
+                if (!audioContext) {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                
+                // Включаем звуковой контекст после взаимодействия пользователя
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 880; // Нота Ля (A5)
+                gainNode.gain.value = 0.3; // Громкость 30%
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.5);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch (err) {
+                console.log('Audio not supported:', err);
+            }
+        }
+        
+        function enableSound() {
+            soundEnabled = true;
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            showStatus('🔔 Звук включён');
+        }
+        
+        function disableSound() {
+            soundEnabled = false;
+            showStatus('🔕 Звук выключен');
+        }
+        
         // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
         let currentNickname = localStorage.getItem('speak_nickname');
         let currentUserId = localStorage.getItem('speak_userId');
-        let currentChat = null;
+        let currentChat = localStorage.getItem('speak_current_chat') || null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         let currentTab = 'contacts';
         let searchTimeout = null;
+        let messageLoadCount = 0;
         
         function formatNickname(name) {
             if (!name) return '';
@@ -646,6 +689,7 @@
                 localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                 if (currentChat === username) {
                     currentChat = null;
+                    localStorage.removeItem('speak_current_chat');
                 }
                 renderContactsPage();
                 showStatus('Контакт удалён');
@@ -694,6 +738,16 @@
                     msg.sender_username === currentChat || 
                     msg.sender_username === currentUser
                 );
+                
+                // Проверяем, есть ли новые сообщения (не от себя)
+                if (messageLoadCount > 0 && chatMessages.length > messageLoadCount) {
+                    const newMessages = chatMessages.slice(messageLoadCount);
+                    const hasNewFromOther = newMessages.some(msg => msg.sender_username !== currentUser);
+                    if (hasNewFromOther) {
+                        playNotificationSound();
+                    }
+                }
+                messageLoadCount = chatMessages.length;
                 
                 const messagesDiv = document.getElementById('messagesArea');
                 if (chatMessages.length === 0) {
@@ -757,15 +811,17 @@
         // ============ ВЫБОР ЧАТА ============
         async function selectChat(username) {
             currentChat = username;
+            localStorage.setItem('speak_current_chat', username);
             currentTab = 'chats';
             
-            // Переключаем вкладки
+            // Сбрасываем счётчик сообщений
+            messageLoadCount = 0;
+            
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
             document.getElementById('chatsTab').classList.add('active');
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.getElementById('chatsTabBtn').classList.add('active');
             
-            // Получаем информацию о собеседнике
             let nickname = username;
             try {
                 const token = localStorage.getItem('speak_token');
@@ -787,7 +843,6 @@
             document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(nickname)}</span>`;
             document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
             
-            // Активируем поле ввода
             const msgInput = document.getElementById('messageInput');
             const sendBtn = document.querySelector('#chatsTab .input-area button');
             if (msgInput) {
@@ -797,11 +852,11 @@
             }
             if (sendBtn) sendBtn.disabled = false;
             
-            loadMessages();
+            await loadMessages();
             
             if (window.messageInterval) clearInterval(window.messageInterval);
-            window.messageInterval = setInterval(() => {
-                if (currentChat) loadMessages();
+            window.messageInterval = setInterval(async () => {
+                if (currentChat) await loadMessages();
             }, 3000);
         }
         
@@ -894,7 +949,13 @@
             document.getElementById('app').innerHTML = `
                 <div class="app-container">
                     <div class="header">
-                        <h1>🔒 Speak</h1>
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h1>🔒 Speak</h1>
+                            <div style="display: flex; gap: 8px;">
+                                <button onclick="enableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔔 Вкл</button>
+                                <button onclick="disableSound()" style="background: #2c2c2e; border: none; border-radius: 20px; padding: 6px 12px; color: white; font-size: 12px; cursor: pointer;">🔕 Выкл</button>
+                            </div>
+                        </div>
                         <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
                     </div>
                     
@@ -952,13 +1013,20 @@
                 document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
                 loadMessages();
                 if (window.messageInterval) clearInterval(window.messageInterval);
-                window.messageInterval = setInterval(() => {
-                    if (currentChat) loadMessages();
+                window.messageInterval = setInterval(async () => {
+                    if (currentChat) await loadMessages();
                 }, 3000);
             }
         }
         
         // ============ ЗАПУСК ============
+        // Включаем звук после первого взаимодействия с пользователем
+        document.body.addEventListener('click', () => {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }, { once: true });
+        
         if (authToken && currentUser) {
             renderMainApp();
         } else {
@@ -975,6 +1043,8 @@
         window.selectChat = selectChat;
         window.onSearchInput = onSearchInput;
         window.switchTab = switchTab;
+        window.enableSound = enableSound;
+        window.disableSound = disableSound;
     </script>
 </body>
 </html>
