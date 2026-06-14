@@ -763,21 +763,27 @@ function logout() {
             }
         }
         
- // ============ ЗАГРУЗКА СООБЩЕНИЙ ============
+// ============ ЗАГРУЗКА СООБЩЕНИЙ ============
 async function loadMessages() {
-    if (!authToken) return;
+    if (!authToken || !currentChat) return;
     
     try {
         const response = await apiRequest('/api/messages', 'GET');
         const allMessages = await response.json();
         
+        // Фильтруем сообщения только между текущим пользователем и выбранным собеседником
+        const chatMessages = allMessages.filter(msg => 
+            (msg.sender_username === currentUser && msg.recipient_username === currentChat) ||
+            (msg.sender_username === currentChat && msg.recipient_username === currentUser)
+        );
+        
         const messagesDiv = document.getElementById('messagesArea');
         if (!messagesDiv) return;
         
-        if (allMessages.length === 0) {
+        if (chatMessages.length === 0) {
             messagesDiv.innerHTML = '<div class="empty-state">💬 Нет сообщений<br>Напишите что-нибудь</div>';
         } else {
-            messagesDiv.innerHTML = allMessages.map(msg => {
+            messagesDiv.innerHTML = chatMessages.map(msg => {
                 const isOwn = msg.sender_username === currentUser;
                 const senderName = isOwn ? 'Вы' : formatNickname(msg.sender_display_name || msg.sender_username);
                 let messageTime = '';
