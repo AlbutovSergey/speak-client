@@ -338,7 +338,7 @@
             color: #ff3b30;
         }
         
-        /* Стили для экрана входа (исходный дизайн) */
+        /* Стили для экрана входа */
         .login-wrapper {
             display: flex;
             justify-content: center;
@@ -421,14 +421,14 @@
         // ============ ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ============
         let authToken = localStorage.getItem('speak_token');
         let currentUser = localStorage.getItem('speak_username');
-        let currentDisplayName = localStorage.getItem('speak_displayName');
+        let currentNickname = localStorage.getItem('speak_nickname');
         let currentUserId = localStorage.getItem('speak_userId');
         let currentChat = null;
         let contacts = JSON.parse(localStorage.getItem('speak_contacts') || '[]');
         let currentTab = 'contacts';
         let searchTimeout = null;
         
-        function formatDisplayName(name) {
+        function formatNickname(name) {
             if (!name) return '';
             return name.startsWith('@') ? name : `@${name}`;
         }
@@ -474,10 +474,10 @@
             }
             
             resultsDiv.innerHTML = results.map(user => `
-                <div class="search-result-item" onclick="addContactByUsername('${user.username}', '${user.display_name}')">
+                <div class="search-result-item" onclick="addContactByUsername('${user.username}', '${user.nickname}')">
                     <div class="search-result-avatar">👤</div>
                     <div class="search-result-info">
-                        <div class="search-result-name">${formatDisplayName(user.display_name || user.username)}</div>
+                        <div class="search-result-name">${formatNickname(user.nickname || user.username)}</div>
                         <div class="search-result-username">${user.username}</div>
                     </div>
                 </div>
@@ -485,7 +485,7 @@
             resultsDiv.style.display = 'block';
         }
         
-        async function addContactByUsername(username, displayName) {
+        async function addContactByUsername(username, nickname) {
             if (!username || username === currentUser) return;
             
             if (!contacts.includes(username)) {
@@ -495,9 +495,9 @@
                 document.getElementById('searchInput').value = '';
                 document.getElementById('searchResults').innerHTML = '';
                 document.getElementById('searchResults').style.display = 'none';
-                showStatus(`Контакт ${formatDisplayName(displayName || username)} добавлен`);
+                showStatus(`Контакт ${formatNickname(nickname || username)} добавлен`);
             } else {
-                showStatus(`Контакт ${formatDisplayName(displayName || username)} уже есть`, true);
+                showStatus(`Контакт ${formatNickname(nickname || username)} уже есть`, true);
             }
         }
         
@@ -523,21 +523,21 @@
         
         // ============ РЕГИСТРАЦИЯ ============
         async function register() {
-            let displayName = document.getElementById('regDisplayName').value.trim();
+            let nickname = document.getElementById('regNickname').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
             
-            if (displayName && !displayName.startsWith('@')) {
-                displayName = '@' + displayName;
+            if (nickname && !nickname.startsWith('@')) {
+                nickname = '@' + nickname;
             }
             
-            if (!displayName) { alert('Введите отображаемое имя'); return; }
+            if (!nickname) { alert('Введите псевдоним'); return; }
             if (username.length < 3) { alert('Логин должен быть не менее 3 символов'); return; }
             if (password.length < 6) { alert('Пароль должен быть не менее 6 символов'); return; }
             
             try {
                 const response = await apiRequest('/api/register', 'POST', {
-                    username, password, displayName,
+                    username, password, displayName: nickname,
                     publicKey: 'temp-key',
                     signaturePublicKey: 'temp-sig',
                     signaturePrivateKey: 'temp-priv'
@@ -547,18 +547,18 @@
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentDisplayName = data.displayName;
+                    currentNickname = data.displayName;
                     currentUserId = data.userId;
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_displayName', currentDisplayName);
+                    localStorage.setItem('speak_nickname', currentNickname);
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
                     if (data.error === 'Username already exists') {
                         alert('Пользователь с таким логином уже существует');
                     } else if (data.error === 'This display name is already taken') {
-                        alert('Это отображаемое имя уже занято');
+                        alert('Этот псевдоним уже занят');
                     } else {
                         alert('Ошибка регистрации: ' + (data.error || 'Неизвестная ошибка'));
                     }
@@ -585,11 +585,11 @@
                 if (data.success) {
                     authToken = data.token;
                     currentUser = data.username;
-                    currentDisplayName = data.display_name;
+                    currentNickname = data.display_name;
                     currentUserId = data.userId;
                     localStorage.setItem('speak_token', authToken);
                     localStorage.setItem('speak_username', currentUser);
-                    localStorage.setItem('speak_displayName', currentDisplayName);
+                    localStorage.setItem('speak_nickname', currentNickname);
                     localStorage.setItem('speak_userId', currentUserId);
                     location.reload();
                 } else {
@@ -608,18 +608,18 @@
         
         // ============ ДОБАВИТЬ КОНТАКТ ============
         async function addContact() {
-            const input = prompt('Введите @Отображаемое имя собеседника:');
+            const input = prompt('Введите @Псевдоним собеседника:');
             if (!input) return;
             
-            const displayNameQuery = input.trim().replace(/^@/, '');
-            if (!displayNameQuery) { showStatus('Введите имя для поиска', true); return; }
+            const nicknameQuery = input.trim().replace(/^@/, '');
+            if (!nicknameQuery) { showStatus('Введите псевдоним для поиска', true); return; }
             
             try {
-                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(displayNameQuery), 'GET');
+                const response = await apiRequest('/api/users/search?q=' + encodeURIComponent(nicknameQuery), 'GET');
                 const users = await response.json();
                 const foundUser = users.find(u => 
-                    u.display_name.toLowerCase() === '@' + displayNameQuery.toLowerCase() || 
-                    u.display_name.toLowerCase() === displayNameQuery.toLowerCase()
+                    u.display_name.toLowerCase() === '@' + nicknameQuery.toLowerCase() || 
+                    u.display_name.toLowerCase() === nicknameQuery.toLowerCase()
                 );
                 
                 if (!foundUser || foundUser.username === currentUser) {
@@ -631,9 +631,9 @@
                     contacts.push(foundUser.username);
                     localStorage.setItem('speak_contacts', JSON.stringify(contacts));
                     renderContactsPage();
-                    showStatus(`Контакт ${formatDisplayName(foundUser.display_name)} добавлен`);
+                    showStatus(`Контакт ${formatNickname(foundUser.display_name)} добавлен`);
                 } else {
-                    showStatus(`Контакт ${formatDisplayName(foundUser.display_name)} уже есть`, true);
+                    showStatus(`Контакт ${formatNickname(foundUser.display_name)} уже есть`, true);
                 }
             } catch (err) {
                 showStatus('Ошибка поиска', true);
@@ -701,7 +701,7 @@
                 } else {
                     messagesDiv.innerHTML = chatMessages.map(msg => {
                         const isOwn = msg.sender_username === currentUser;
-                        const senderName = isOwn ? 'Вы' : formatDisplayName(msg.sender_display_name || msg.sender_username);
+                        const senderName = isOwn ? 'Вы' : formatNickname(msg.sender_display_name || msg.sender_username);
                         let messageTime = '';
                         if (msg.timestamp) {
                             const date = new Date(parseInt(msg.timestamp));
@@ -736,9 +736,9 @@
                 try {
                     const response = await apiRequest(`/api/user_info/${contact}`, 'GET');
                     const userInfo = await response.json();
-                    return { username: contact, displayName: userInfo.display_name || contact };
+                    return { username: contact, nickname: userInfo.display_name || contact };
                 } catch (err) {
-                    return { username: contact, displayName: contact };
+                    return { username: contact, nickname: contact };
                 }
             }));
             
@@ -746,7 +746,7 @@
                 <div class="contact-card" onclick="selectChat('${contact.username}')">
                     <div class="contact-avatar">👤</div>
                     <div class="contact-card-info">
-                        <div class="contact-card-name">${formatDisplayName(contact.displayName)}</div>
+                        <div class="contact-card-name">${formatNickname(contact.nickname)}</div>
                         <div class="contact-card-username">${contact.username}</div>
                     </div>
                     <div class="delete-contact" onclick="event.stopPropagation(); removeContact('${contact.username}')">🗑️</div>
@@ -766,7 +766,7 @@
             document.getElementById('chatsTabBtn').classList.add('active');
             
             // Получаем информацию о собеседнике
-            let displayName = username;
+            let nickname = username;
             try {
                 const token = localStorage.getItem('speak_token');
                 const response = await fetch(`${API_URL}/api/user_info/${username}`, {
@@ -778,13 +778,13 @@
                 });
                 if (response.ok) {
                     const userInfo = await response.json();
-                    displayName = userInfo.display_name || username;
+                    nickname = userInfo.display_name || username;
                 }
             } catch (err) {
                 console.error('Failed to get user info:', err);
             }
             
-            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
+            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(nickname)}</span>`;
             document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
             
             // Активируем поле ввода
@@ -840,7 +840,7 @@
             }
         }
         
-        // ============ ЭКРАН ВХОДА (ИСХОДНЫЙ ДИЗАЙН) ============
+        // ============ ЭКРАН ВХОДА ============
         function renderLogin() {
             document.getElementById('app').innerHTML = `
                 <div class="login-wrapper">
@@ -860,8 +860,8 @@
                         </div>
                         
                         <div id="registerForm" style="display:none;">
-                            <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
-                            <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" autocomplete="off">
+                            <input type="text" id="regNickname" placeholder="Псевдоним" autocomplete="off">
+                            <input type="text" id="regUsername" placeholder="Логин" autocomplete="off">
                             <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                             <button id="doRegisterBtn">Зарегистрироваться</button>
                         </div>
@@ -895,14 +895,14 @@
                 <div class="app-container">
                     <div class="header">
                         <h1>🔒 Speak</h1>
-                        <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
+                        <div class="user-info">Вы: <span>${formatNickname(currentNickname || currentUser)}</span> (${currentUser})</div>
                     </div>
                     
                     <div class="content-area">
                         <div id="contactsTab" class="tab-content active">
                             <div class="contacts-page">
                                 <div class="search-box">
-                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Отображаемое имя..." oninput="onSearchInput()">
+                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Псевдоним..." oninput="onSearchInput()">
                                     <div id="searchResults" class="search-results" style="display:none;"></div>
                                 </div>
                                 <div id="contactsList" class="contacts-list"></div>
@@ -948,7 +948,7 @@
                     msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
                 }
                 if (sendBtn) sendBtn.disabled = false;
-                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(currentChat)}</span>`;
+                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatNickname(currentNickname || currentChat)}</span>`;
                 document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
                 loadMessages();
                 if (window.messageInterval) clearInterval(window.messageInterval);
