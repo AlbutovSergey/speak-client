@@ -39,7 +39,7 @@
             color: #007aff;
         }
         
-        /* Область содержимого (переключается между вкладками) */
+        /* Область содержимого */
         .content-area {
             flex: 1;
             overflow: hidden;
@@ -338,7 +338,7 @@
             color: #ff3b30;
         }
         
-        /* Стили для экрана входа */
+        /* Стили для экрана входа (исходный дизайн) */
         .login-wrapper {
             display: flex;
             justify-content: center;
@@ -754,71 +754,40 @@
             `).join('');
         }
         
-       // ============ ВЫБОР ЧАТА ============
-async function selectChat(username) {
-    currentChat = username;
-    
-    // Переключаем на вкладку чатов
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-    document.getElementById('chatsTab').classList.add('active');
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.getElementById('chatsTabBtn').classList.add('active');
-    
-    // Получаем информацию о собеседнике
-    let displayName = username;
-    try {
-        const token = localStorage.getItem('speak_token');
-        const response = await fetch(`${API_URL}/api/user_info/${username}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+        // ============ ВЫБОР ЧАТА ============
+        async function selectChat(username) {
+            currentChat = username;
+            currentTab = 'chats';
+            
+            // Переключаем вкладки
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('chatsTab').classList.add('active');
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById('chatsTabBtn').classList.add('active');
+            
+            // Получаем информацию о собеседнике
+            let displayName = username;
+            try {
+                const token = localStorage.getItem('speak_token');
+                const response = await fetch(`${API_URL}/api/user_info/${username}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (response.ok) {
+                    const userInfo = await response.json();
+                    displayName = userInfo.display_name || username;
+                }
+            } catch (err) {
+                console.error('Failed to get user info:', err);
             }
-        });
-        if (response.ok) {
-            const userInfo = await response.json();
-            displayName = userInfo.display_name || username;
-        }
-    } catch (err) {
-        console.error('Failed to get user info:', err);
-    }
-    
-    document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
-    document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
-    
-    // Активируем поле ввода
-    const msgInput = document.getElementById('messageInput');
-    const sendBtn = document.querySelector('#chatsTab .input-area button');
-    if (msgInput) {
-        msgInput.disabled = false;
-        msgInput.placeholder = "Сообщение...";
-        msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
-    }
-    if (sendBtn) sendBtn.disabled = false;
-    
-    loadMessages();
-    
-    // Автообновление сообщений
-    if (window.messageInterval) clearInterval(window.messageInterval);
-    window.messageInterval = setInterval(() => {
-        if (currentChat) loadMessages();
-    }, 3000);
-}
-       // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
-function switchTab(tab) {
-    currentTab = tab;
-    
-    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-    document.getElementById(`${tab}Tab`).classList.add('active');
-    
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(`${tab}TabBtn`).classList.add('active');
-    
-    if (tab === 'contacts') {
-        renderContactsPage();
-    } else if (tab === 'chats') {
-        // Если есть выбранный чат, активируем поле ввода
-        if (currentChat) {
+            
+            document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(displayName)}</span>`;
+            document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${username}`;
+            
+            // Активируем поле ввода
             const msgInput = document.getElementById('messageInput');
             const sendBtn = document.querySelector('#chatsTab .input-area button');
             if (msgInput) {
@@ -827,21 +796,51 @@ function switchTab(tab) {
                 msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
             }
             if (sendBtn) sendBtn.disabled = false;
+            
             loadMessages();
-        } else {
-            // Нет выбранного чата — показываем подсказку
-            const msgInput = document.getElementById('messageInput');
-            const sendBtn = document.querySelector('#chatsTab .input-area button');
-            if (msgInput) {
-                msgInput.disabled = true;
-                msgInput.placeholder = "Выберите чат из списка контактов";
-            }
-            if (sendBtn) sendBtn.disabled = true;
+            
+            if (window.messageInterval) clearInterval(window.messageInterval);
+            window.messageInterval = setInterval(() => {
+                if (currentChat) loadMessages();
+            }, 3000);
         }
-    }
-}
         
-        // ============ ЭКРАН ВХОДА ============
+        // ============ ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК ============
+        function switchTab(tab) {
+            currentTab = tab;
+            
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tab}Tab`).classList.add('active');
+            
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`${tab}TabBtn`).classList.add('active');
+            
+            if (tab === 'contacts') {
+                renderContactsPage();
+            } else if (tab === 'chats') {
+                if (currentChat) {
+                    const msgInput = document.getElementById('messageInput');
+                    const sendBtn = document.querySelector('#chatsTab .input-area button');
+                    if (msgInput) {
+                        msgInput.disabled = false;
+                        msgInput.placeholder = "Сообщение...";
+                        msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+                    }
+                    if (sendBtn) sendBtn.disabled = false;
+                    loadMessages();
+                } else {
+                    const msgInput = document.getElementById('messageInput');
+                    const sendBtn = document.querySelector('#chatsTab .input-area button');
+                    if (msgInput) {
+                        msgInput.disabled = true;
+                        msgInput.placeholder = "Выберите чат из списка контактов";
+                    }
+                    if (sendBtn) sendBtn.disabled = true;
+                }
+            }
+        }
+        
+        // ============ ЭКРАН ВХОДА (ИСХОДНЫЙ ДИЗАЙН) ============
         function renderLogin() {
             document.getElementById('app').innerHTML = `
                 <div class="login-wrapper">
@@ -862,8 +861,8 @@ function switchTab(tab) {
                         
                         <div id="registerForm" style="display:none;">
                             <input type="text" id="regDisplayName" placeholder="Отображаемое имя" autocomplete="off">
-                            <input type="text" id="regUsername" placeholder="Логин" autocomplete="off">
-                            <input type="password" id="regPassword" placeholder="Пароль">
+                            <input type="text" id="regUsername" placeholder="Логин (мин. 3 символа)" autocomplete="off">
+                            <input type="password" id="regPassword" placeholder="Пароль (мин. 6 символов)">
                             <button id="doRegisterBtn">Зарегистрироваться</button>
                         </div>
                         
@@ -890,81 +889,75 @@ function switchTab(tab) {
             document.getElementById('doRegisterBtn').onclick = register;
         }
         
-      // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
-function renderMainApp() {
-    document.getElementById('app').innerHTML = `
-        <div class="app-container">
-            <div class="header">
-                <h1>🔒 Speak</h1>
-                <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
-            </div>
-            
-            <div class="content-area">
-                <!-- Вкладка Контакты -->
-                <div id="contactsTab" class="tab-content active">
-                    <div class="contacts-page">
-                        <div class="search-box">
-                            <input type="text" id="searchInput" placeholder="🔍 Поиск по @Отображаемое имя..." oninput="onSearchInput()">
-                            <div id="searchResults" class="search-results" style="display:none;"></div>
-                        </div>
-                        <div id="contactsList" class="contacts-list"></div>
-                        <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
+        // ============ ОСНОВНОЙ ИНТЕРФЕЙС ============
+        function renderMainApp() {
+            document.getElementById('app').innerHTML = `
+                <div class="app-container">
+                    <div class="header">
+                        <h1>🔒 Speak</h1>
+                        <div class="user-info">Вы: <span>${formatDisplayName(currentDisplayName || currentUser)}</span> (${currentUser})</div>
                     </div>
-                </div>
-                
-                <!-- Вкладка Чаты -->
-                <div id="chatsTab" class="tab-content">
-                    <div class="chat-page">
-                        <div class="chat-header">
-                            <h3 id="chatHeaderName">Выберите чат</h3>
-                            <p id="chatHeaderStatus">Выберите собеседника из списка контактов</p>
+                    
+                    <div class="content-area">
+                        <div id="contactsTab" class="tab-content active">
+                            <div class="contacts-page">
+                                <div class="search-box">
+                                    <input type="text" id="searchInput" placeholder="🔍 Поиск по @Отображаемое имя..." oninput="onSearchInput()">
+                                    <div id="searchResults" class="search-results" style="display:none;"></div>
+                                </div>
+                                <div id="contactsList" class="contacts-list"></div>
+                                <button class="add-contact-btn" onclick="addContact()">➕ Добавить контакт</button>
+                            </div>
                         </div>
-                        <div class="messages-area" id="messagesArea">
-                            <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
-                        </div>
-                        <div class="input-area">
-                            <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
-                            <button onclick="sendMessage()" disabled>→</button>
+                        
+                        <div id="chatsTab" class="tab-content">
+                            <div class="chat-page">
+                                <div class="chat-header">
+                                    <h3 id="chatHeaderName">Выберите чат</h3>
+                                    <p id="chatHeaderStatus">Выберите собеседника из списка контактов</p>
+                                </div>
+                                <div class="messages-area" id="messagesArea">
+                                    <div class="empty-state">👈 Перейдите в "Контакты" и выберите собеседника</div>
+                                </div>
+                                <div class="input-area">
+                                    <input type="text" id="messageInput" placeholder="Выберите чат из списка контактов" autocomplete="off" disabled>
+                                    <button onclick="sendMessage()" disabled>→</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    
+                    <div class="bottom-tabs">
+                        <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
+                        <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
+                        <button class="tab" onclick="logout()">🚪 Выйти</button>
+                    </div>
+                    
+                    <div id="status" class="status"></div>
                 </div>
-            </div>
+            `;
             
-            <div class="bottom-tabs">
-                <button id="contactsTabBtn" class="tab active" onclick="switchTab('contacts')">👥 Контакты</button>
-                <button id="chatsTabBtn" class="tab" onclick="switchTab('chats')">💬 Чаты</button>
-                <button class="tab" onclick="logout()">🚪 Выйти</button>
-            </div>
+            renderContactsPage();
             
-            <div id="status" class="status"></div>
-        </div>
-    `;
-    
-    renderContactsPage();
-    
-    // Если уже выбран чат (например, после обновления страницы)
-    if (currentChat) {
-        // Активируем поле ввода
-        const msgInput = document.getElementById('messageInput');
-        const sendBtn = document.querySelector('#chatsTab .input-area button');
-        if (msgInput) {
-            msgInput.disabled = false;
-            msgInput.placeholder = "Сообщение...";
-            msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+            if (currentChat) {
+                const msgInput = document.getElementById('messageInput');
+                const sendBtn = document.querySelector('#chatsTab .input-area button');
+                if (msgInput) {
+                    msgInput.disabled = false;
+                    msgInput.placeholder = "Сообщение...";
+                    msgInput.onkeypress = (e) => { if (e.key === 'Enter') sendMessage(); };
+                }
+                if (sendBtn) sendBtn.disabled = false;
+                document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(currentChat)}</span>`;
+                document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
+                loadMessages();
+                if (window.messageInterval) clearInterval(window.messageInterval);
+                window.messageInterval = setInterval(() => {
+                    if (currentChat) loadMessages();
+                }, 3000);
+            }
         }
-        if (sendBtn) sendBtn.disabled = false;
         
-        // Обновляем заголовок чата
-        document.getElementById('chatHeaderName').innerHTML = `Чат с <span>${formatDisplayName(currentChat)}</span>`;
-        document.getElementById('chatHeaderStatus').innerHTML = `Переписка с ${currentChat}`;
-        
-        loadMessages();
-        if (window.messageInterval) clearInterval(window.messageInterval);
-        window.messageInterval = setInterval(() => {
-            if (currentChat) loadMessages();
-        }, 3000);
-    }
-}
         // ============ ЗАПУСК ============
         if (authToken && currentUser) {
             renderMainApp();
@@ -972,8 +965,6 @@ function renderMainApp() {
             renderLogin();
         }
         
-        window.toggleSidebar = function() {};
-        window.closeSidebar = function() {};
         window.register = register;
         window.login = login;
         window.logout = logout;
